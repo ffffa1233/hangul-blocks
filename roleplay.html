@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#7c5cff">
+<title>역할놀이 매표소</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{--accent:#7c5cff;--soft:#fff6e5;--ink:#2b2730;--muted:#7b7480;--line:#ece6dc}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{min-height:100vh;min-height:100dvh;background:var(--soft);color:var(--ink);font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;user-select:none;-webkit-user-select:none;overscroll-behavior:none;transition:background .3s;overflow-x:hidden}
+button{font-family:inherit;touch-action:manipulation;cursor:pointer;border:0;color:inherit}
+input{user-select:text;-webkit-user-select:text}
+
+/* 상단바 */
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:var(--accent);color:#fff;transition:background .3s}
+.top h2{flex:1;margin:0;font-size:22px;font-weight:400;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.22);color:#fff;font-size:22px;flex:none}
+main{max-width:780px;margin:0 auto;padding:14px 16px 48px}
+.screen.in{animation:fadeup .35s}
+
+/* 공통 */
+.dots{display:flex;gap:6px;justify-content:center;margin:4px 0 12px}
+.dots i{width:10px;height:10px;border-radius:6px;background:rgba(0,0,0,.12);transition:.3s}
+.dots i.past{background:var(--accent);opacity:.45}
+.dots i.on{background:var(--accent);width:28px}
+h1.t{font-size:clamp(28px,7.5vw,44px);text-align:center;margin:4px 0 6px;font-weight:400;line-height:1.2}
+.sub{text-align:center;color:var(--muted);font-size:22px;margin:0 0 6px}
+.bubble{display:flex;gap:8px;align-items:flex-start;max-width:600px;min-height:54px;margin:8px auto 16px;background:#fff;border-radius:18px;padding:12px 16px;font-size:19px;line-height:1.35;box-shadow:0 3px 0 rgba(0,0,0,.05)}
+.bubble i{font-style:normal;flex:none}
+.bubble span{color:#555}
+.next{display:block;margin:22px auto 0;background:var(--accent);color:#fff;font-size:26px;padding:18px 34px;border-radius:999px;box-shadow:0 6px 0 rgba(0,0,0,.18);min-width:240px;opacity:0;pointer-events:none;transform:scale(.85);transition:opacity .3s,transform .3s}
+.next.show{opacity:1;pointer-events:auto;transform:none}
+.next.show:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.next.alt{background:#fff;color:var(--ink)}
+.row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.row .next{margin:0;min-width:180px}
+.small-btn{display:block;margin:14px auto 0;background:#fff;font-size:20px;padding:12px 22px;border-radius:999px;box-shadow:0 4px 0 rgba(0,0,0,.08)}
+
+/* 홈 */
+.home h1{font-size:clamp(30px,8vw,46px);text-align:center;font-weight:400;margin:10px 0 14px}
+.namebox{display:flex;align-items:center;gap:10px;background:#fff;border-radius:18px;padding:10px 16px;margin:0 auto 18px;max-width:440px;font-size:20px;box-shadow:0 3px 0 rgba(0,0,0,.05)}
+.namebox input{flex:1;min-width:0;border:0;border-bottom:3px solid var(--line);font:inherit;font-size:22px;padding:6px 4px;outline:none;background:transparent;color:var(--ink)}
+.namebox input:focus{border-color:var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+@media(min-width:640px){.cards{grid-template-columns:repeat(3,1fr)}}
+.card{border-radius:26px;padding:22px 10px;color:#fff;font-size:26px;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:0 6px 0 rgba(0,0,0,.15);text-shadow:0 2px 0 rgba(0,0,0,.12);transition:transform .1s}
+.card:active{transform:scale(.95)}
+.card .e{font-size:clamp(60px,16vw,82px);line-height:1.1;text-shadow:none}
+.tip{text-align:center;color:var(--muted);font-size:17px;margin-top:22px;line-height:1.5}
+
+/* 고르기 */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px}
+.opt{background:#fff;border-radius:24px;padding:18px 8px;box-shadow:0 4px 0 rgba(0,0,0,.06),0 8px 20px rgba(0,0,0,.05);font-size:22px;display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .12s,background .2s}
+.opt:active{transform:scale(.95)}
+.opt .e{font-size:clamp(54px,13vw,74px);line-height:1.1}
+.opt.pick{background:var(--accent);color:#fff;transform:scale(1.06)}
+
+/* 티켓 */
+.printer{max-width:380px;margin:6px auto 0}
+.slot{height:18px;border-radius:10px;background:#333;margin:0 4px;position:relative;z-index:2;box-shadow:inset 0 4px 4px #000}
+.tclip{overflow:hidden;margin:-9px 18px 0;padding:0 6px 16px}
+.ticket{background:#fff;border-radius:0 0 18px 18px;padding:18px 20px 16px;box-shadow:0 10px 24px rgba(0,0,0,.14);animation:print 1.4s steps(14) both}
+@keyframes print{from{transform:translateY(-100%)}to{transform:none}}
+.t-head{font-size:15px;letter-spacing:1px;color:#fff;background:var(--accent);margin:-18px -20px 12px;padding:16px 20px 10px}
+.t-big{font-size:clamp(40px,11vw,62px);text-align:center;margin:2px 0 10px;line-height:1.15}
+.t-rows{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;border-top:2px dashed var(--line);padding-top:12px}
+.t-rows span{display:block;font-size:14px;color:var(--muted)}
+.t-rows b{font-weight:400;font-size:22px;word-break:keep-all}
+.barcode{height:54px;margin-top:14px;border-radius:4px}
+
+/* 찍기 */
+.tapper{display:flex;align-items:center;justify-content:center;margin:14px auto 6px;width:min(66vw,280px);aspect-ratio:1;border-radius:50%;background:#fff;border:7px dashed var(--accent);font-size:clamp(84px,22vw,124px);animation:pulse 1.4s infinite}
+.tapper.ok{border-style:solid;border-color:#22c55e;background:#ecfdf3;animation:none}
+.tapper.flash{animation:flash .7s}
+.done{text-align:center;font-size:32px;color:#16a34a;min-height:44px}
+
+/* 애니메이션 무대 */
+.stage{position:relative;height:min(52vh,360px);border-radius:28px;overflow:hidden;background:linear-gradient(#a9d8ff,#eaf6ff)}
+.s-train{background:linear-gradient(#bfe6ff 0 60%,#bfeac0 60%)}
+.s-ride{background:linear-gradient(#ffd6ea,#fff4cc)}
+.cloud{position:absolute;font-size:56px;animation:drift linear infinite;opacity:.95}
+.actor{position:absolute;left:50%;top:55%;transform:translate(-50%,-50%);font-size:clamp(96px,25vw,150px);line-height:1}
+.a-takeoff{animation:takeoff 3s ease-in both}
+.a-train{animation:train 3.4s ease-in-out both;top:auto;bottom:22px;transform:none}
+.a-ride{animation:ride 1s ease-in-out 4 both}
+.ground{position:absolute;left:0;right:0;bottom:0;height:20px;background:repeating-linear-gradient(90deg,#8b5e3c 0 22px,#a8774f 22px 44px)}
+.hint{position:absolute;bottom:26px;left:0;right:0;text-align:center;color:rgba(0,0,0,.4);font-size:17px}
+.s-train .hint,.s-drive .hint,.s-arrive .hint{bottom:auto;top:12px}
+.s-drive,.s-arrive{background:linear-gradient(#bfe6ff 0 62%,#cfe9b8 62%)}
+.s-rocket{background:linear-gradient(#0b1033,#2a1b5e)}
+.s-rocket .hint{color:rgba(255,255,255,.55)}
+.ground.road{height:30px;background:linear-gradient(#5b5b5b 0 44%,#facc15 44% 56%,#5b5b5b 56%);background-size:auto}
+.ground.road::after{content:'';position:absolute;inset:13px 0 auto;height:4px;background:repeating-linear-gradient(90deg,#5b5b5b 0 18px,transparent 18px 36px)}
+.a-drive{animation:train 3.4s ease-in-out both;top:auto;bottom:24px;transform:none}
+.a-arrive{animation:arrive 2.4s cubic-bezier(.2,.7,.3,1) both;top:auto;bottom:24px;transform:translateX(-50%)}
+.a-rocket{animation:rocket 3.2s ease-in both}
+.count{font-size:clamp(150px,42vw,230px);text-align:center;color:var(--accent);line-height:1.1;margin-top:10px}
+.count.pop{animation:cpop .6s}
+.gh{font-size:23px;font-weight:400;margin:22px 4px 10px}
+.s-sky{height:min(34vh,230px);margin-bottom:14px}
+.a-fly{animation:fly 1.8s ease-in-out infinite}
+.stage.shake{animation:shake .25s 8}
+.cd{position:absolute;left:0;right:0;top:8px;text-align:center;font-size:72px;color:#fff;text-shadow:0 3px 10px rgba(0,0,0,.35);pointer-events:none}
+.acts.bigacts{grid-template-columns:repeat(2,1fr)}
+@media(min-width:640px){.acts.bigacts{grid-template-columns:repeat(3,1fr)}}
+.bigacts .act{padding:20px 6px;font-size:23px}
+.bigacts .act .e{font-size:64px}
+.bigacts .act.lit{background:var(--accent);color:#fff}
+@keyframes fly{0%,100%{transform:translate(-50%,-50%) rotate(-6deg)}50%{transform:translate(-50%,-75%) rotate(6deg)}}
+@keyframes shake{0%,100%{transform:none}25%{transform:translate(-6px,3px) rotate(-1deg)}75%{transform:translate(6px,-3px) rotate(1deg)}}
+
+/* 버튼 모음 */
+.acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.act{background:#fff;border-radius:22px;padding:16px 6px;font-size:20px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 4px 0 rgba(0,0,0,.06)}
+.act .e{font-size:56px;line-height:1.1;display:inline-block}
+.act.wig .e{animation:wig .5s}
+
+/* 호출 전광판 */
+.board{background:#1f2937;color:#fbbf24;border-radius:26px;padding:22px 16px;text-align:center;box-shadow:inset 0 0 0 7px #374151,0 8px 20px rgba(0,0,0,.15)}
+.board .lab{color:#9ca3af;font-size:20px}
+.board .n{font-size:clamp(84px,26vw,150px);line-height:1.15}
+.board .n.wait{color:#6b7280;animation:pulse 1s infinite}
+.board .n.blink{animation:blink .5s 6}
+.board .who{color:#fff;font-size:26px;min-height:34px}
+
+/* 마트 */
+.mart{display:grid;gap:14px}
+@media(min-width:640px){.mart{grid-template-columns:1.25fr 1fr;align-items:start}}
+.shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.goods{background:#fff;border-radius:18px;padding:10px 4px;font-size:17px;display:flex;flex-direction:column;align-items:center;box-shadow:0 3px 0 rgba(0,0,0,.06)}
+.goods:active{transform:scale(.94)}
+.goods .e{font-size:46px;line-height:1.15}
+.goods small{color:var(--muted);font-size:14px}
+.lcd{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#0f172a;color:#4ade80;border-radius:14px;padding:12px 16px;font-size:22px;min-height:58px}
+.lcd.hit{animation:hit .4s}
+.receipt{background:#fff;border-radius:18px;padding:12px 16px;margin-top:10px;font-size:18px;box-shadow:0 6px 18px rgba(0,0,0,.06);max-height:260px;overflow:auto}
+.receipt .line{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--line)}
+.receipt .sum{display:flex;justify-content:space-between;font-size:26px;margin-top:8px;color:var(--accent)}
+.receipt .empty{color:var(--muted);text-align:center;padding:10px}
+
+/* 끝 */
+.big{font-size:clamp(110px,30vw,170px);text-align:center;line-height:1.2;animation:bounce 1.2s infinite}
+.conf{position:fixed;top:-60px;font-size:34px;pointer-events:none;z-index:20;animation:fall linear forwards}
+
+@keyframes fadeup{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes flash{0%{box-shadow:0 0 0 0 rgba(34,197,94,.7);transform:scale(.94)}100%{box-shadow:0 0 0 46px rgba(34,197,94,0);transform:none}}
+@keyframes drift{from{left:105%}to{left:-25%}}
+@keyframes takeoff{0%{left:8%;top:82%;transform:translate(-50%,-50%) scale(1)}40%{left:40%;top:62%;transform:translate(-50%,-50%) scale(.95)}100%{left:115%;top:-25%;transform:translate(-50%,-50%) scale(.45)}}
+@keyframes train{from{left:105%}to{left:-70%}}
+@keyframes arrive{from{left:115%}to{left:50%}}
+@keyframes rocket{0%{top:70%;transform:translate(-50%,-50%) rotate(-45deg)}5%,15%,25%{transform:translate(-48%,-50%) rotate(-45deg)}10%,20%,30%{transform:translate(-52%,-50%) rotate(-45deg)}100%{top:-40%;transform:translate(-50%,-50%) rotate(-45deg) scale(.6)}}
+@keyframes cpop{0%{transform:scale(1.6);opacity:0}100%{transform:none;opacity:1}}
+@keyframes ride{0%,100%{transform:translate(-50%,-50%) rotate(0)}25%{transform:translate(-50%,-75%) rotate(-16deg)}75%{transform:translate(-50%,-25%) rotate(16deg)}}
+@keyframes wig{0%,100%{transform:rotate(0)}25%{transform:rotate(-14deg) scale(1.2)}75%{transform:rotate(14deg) scale(1.2)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+@keyframes hit{0%{transform:scale(1.05);color:#fff}100%{transform:none}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
+</style>
+</head>
+<body>
+<div class="top">
+  <button class="ib" id="homeBtn" aria-label="처음으로">🏠</button>
+  <button class="ib" id="backBtn" aria-label="뒤로">◀</button>
+  <h2 id="title">🎪 역할놀이 매표소</h2>
+  <button class="ib" id="voiceBtn" aria-label="안내 음성">🔊</button>
+</div>
+<main><div id="screen" class="screen"></div></main>
+
+<script>
+/* ===== 놀이 시나리오 ===== */
+const SC = {
+ plane:{e:'✈️',name:'비행기',color:'#3b82f6',soft:'#e8f1ff',steps:[
+  {type:'choose',key:'dest',title:'어디로 여행 갈까요?',say:'어서 오세요! 어디로 여행 가시나요?',
+   opts:[['🍊','제주도'],['🗼','일본'],['🗽','미국'],['🐼','중국'],['🌙','달나라'],['🦖','공룡나라']]},
+  {type:'ticket',title:'탑승권이 나왔어요!',say:'{name} 손님, 탑승권 여기 있습니다. {gate}번 탑승구로 가 주세요.',
+   ticket:{head:'BOARDING PASS · 탑승권',big:'{destE} {dest}',rows:[['손님','{name}'],['좌석','{seat}'],['탑승구','{gate}번'],['출발','{time}']],barcode:true},btn:'탑승구로 가기 🚶'},
+  {type:'tap',title:'탑승권을 대 주세요',sub:'여기를 톡!',icon:'🎫',sound:'beep',say:'삐빅! 확인되었습니다. 즐거운 여행 되세요!',done:'✅ 탑승 완료!',btn:'비행기 타기 ✈️'},
+  {type:'panel',title:'자리에 앉아 주세요',say:'손님 여러분, 자리에 앉아 안전벨트를 매 주세요.',
+   items:[['🔔','안전벨트','chime','안전벨트를 매 주세요. 딸깍!'],['📱','휴대폰 끄기','pop','휴대폰은 비행기 모드로 바꿔 주세요.'],['🧳','짐 넣기','pop','가방은 머리 위 선반에 넣어 주세요.'],['🙋','인사하기','pop','안녕하세요! 저는 오늘의 승무원입니다.']],btn:'이륙하기 🛫'},
+  {type:'anim',anim:'takeoff',icon:'✈️',sound:'whoosh',title:'이륙합니다!',say:'곧 이륙하겠습니다. 꽉 잡으세요! 부우우웅!',btn:'하늘 위로 ☁️'},
+  {type:'panel',title:'하늘 위를 날고 있어요',say:'지금 구름 위를 날고 있습니다. 편안한 여행 되세요.',
+   items:[['🍱','기내식','pop','기내식 드릴게요. 맛있게 드세요!'],['🧃','음료','pop','주스 드릴까요, 물 드릴까요?'],['🛎️','승무원 호출','chime','네 손님, 무엇을 도와드릴까요?'],['🌀','흔들흔들','whoosh','비행기가 조금 흔들립니다. 안전벨트를 매 주세요.'],['🪟','창밖 보기','pop','창밖을 보세요. 구름이 솜사탕 같아요!'],['😴','낮잠','pop','불을 끄겠습니다. 편안히 주무세요.']],btn:'착륙하기 🛬'},
+  {type:'end',icon:'🛬',title:'{dest} 도착!',say:'{dest}에 도착했습니다. 이용해 주셔서 감사합니다. 안녕히 가세요!'}
+ ]},
+ home:{e:'🛫',name:'집 비행기',color:'#0ea5e9',soft:'#e3f4fd',steps:[
+  {type:'choose',key:'dest',title:'어디로 날아갈까요?',say:'어서 오세요! 오늘은 어디로 날아갈까요?',
+   opts:[['🍊','제주도'],['🗼','일본'],['🗽','미국'],['🌙','달나라'],['🦖','공룡나라'],['🍭','과자 나라']]},
+  {type:'ticket',title:'티켓 받으세요!',say:'{name} 손님, 티켓 여기 있습니다. {dest} 가는 비행기예요.',
+   ticket:{head:'BOARDING PASS · 집 비행기',big:'{destE} {dest}',rows:[['손님','{name}'],['좌석','{seat}'],['탑승구','{gate}번'],['출발','{time}']],barcode:true},btn:'입장하러 가기 🚶'},
+  {type:'tap',title:'티켓을 대고 입장해 주세요',sub:'여기를 톡!',icon:'🎫',sound:'beep',say:'삐빅! {name} 손님, 입장하세요! 비행기에 올라타 주세요.',done:'✅ 입장 완료!',btn:'자리에 앉기 💺'},
+  {type:'tap',title:'안전벨트를 매 주세요',sub:'딸깍! 눌러요',icon:'🔒',sound:'pop',say:'딸깍! 손 꼭 잡으세요. 곧 출발합니다!',done:'✅ 준비 완료!',btn:'조종석으로 🧑‍✈️'},
+  {type:'cockpit',title:'{dest} 가는 중',say:'버튼을 누르면 기장님이 안내해 드려요.',
+   items:[['🛫','이륙','takeoff','곧 이륙합니다. 꽉 잡으세요!'],['🌀','흔들흔들','shake','난기류입니다! 흔들흔들, 꽉 잡으세요!'],['⬆️','높이 높이','up','더 높이 올라갑니다! 슈우웅!'],['☁️','구름 위','pop','지금 구름 위를 날고 있어요. 아래를 보세요!'],['🍪','기내 간식','pop','간식 드릴게요. 냠냠!'],['🛬','착륙','land','{dest}에 착륙합니다. 쿵! 도착했어요!']],btn:'내리기 👋'},
+  {type:'end',icon:'{destE}',title:'{dest} 도착!',say:'{dest}에 도착했습니다. 집 비행기를 이용해 주셔서 감사합니다!'}
+ ]},
+ train:{e:'🚄',name:'기차',color:'#10b981',soft:'#e6f8f1',steps:[
+  {type:'choose',key:'dest',title:'어디 가는 표 드릴까요?',say:'어서 오세요! 어디 가는 기차표 드릴까요?',
+   opts:[['🌊','부산'],['🏖️','강릉'],['👵','할머니 댁'],['🦁','동물원'],['🎅','산타 마을'],['🍭','과자 나라']]},
+  {type:'ticket',title:'기차표 나왔어요!',say:'{dest} 가는 기차표입니다. {car}호차 {seat}번 자리예요.',
+   ticket:{head:'KTX · 승차권',big:'{destE} {dest}',rows:[['손님','{name}'],['호차','{car}호차'],['좌석','{seat}'],['출발','{time}']],barcode:true},btn:'타는 곳으로 🚶'},
+  {type:'tap',title:'개찰구에 표를 대 주세요',sub:'여기를 톡!',icon:'🎫',sound:'beep',say:'띵동! 통과하세요.',done:'✅ 통과!',btn:'기차 타기 🚃'},
+  {type:'anim',anim:'train',icon:'🚄',sound:'horn',title:'출발합니다!',say:'열차가 곧 출발합니다. 칙칙폭폭!',btn:'기차 안으로 🪑'},
+  {type:'panel',title:'기차 여행 중',say:'이번 열차는 {dest}까지 가는 열차입니다.',
+   items:[['🍙','간식 카트','pop','간식 왔어요! 김밥, 과자, 음료수 있어요.'],['🌑','터널','whoosh','터널을 지나갑니다. 슈우웅!'],['📯','빵빵','horn','빠앙! 칙칙폭폭!'],['🎫','검표','beep','표 확인하겠습니다. 감사합니다!'],['🔔','안내 방송','chime','다음 역은 {dest}, {dest}역입니다.']],btn:'내리기 🚉'},
+  {type:'end',icon:'🚉',title:'{dest}역 도착!',say:'{dest}역에 도착했습니다. 잊으신 물건 없이 안녕히 가세요!'}
+ ]},
+ park:{e:'🎡',name:'놀이공원',color:'#ec4899',soft:'#fdeaf3',steps:[
+  {type:'ticket',title:'입장권 받으세요!',say:'어서 오세요! {name} 손님, 자유이용권 여기 있습니다.',
+   ticket:{head:'FUN PARK · 자유이용권',big:'🎟️ 자유이용권',rows:[['손님','{name}'],['날짜','{date}'],['번호','{num}'],['입장','{time}']],barcode:true},btn:'입구로 가기 🚶'},
+  {type:'tap',title:'입장권을 대 주세요',sub:'여기를 톡!',icon:'🎟️',sound:'beep',say:'삐빅! 입장하세요. 재미있게 놀다 가세요!',done:'✅ 입장!',btn:'놀이기구 고르기 🎠'},
+  {type:'choose',key:'item',title:'뭐 타러 갈까요?',say:'어떤 놀이기구 탈까요?',
+   opts:[['🎠','회전목마'],['🎢','롤러코스터'],['🎡','관람차'],['🚗','범퍼카'],['🏴‍☠️','바이킹'],['☕','커피잔']]},
+  {type:'tap',title:'안전바를 내려 주세요',sub:'딸깍! 눌러요',icon:'🔒',sound:'pop',say:'안전바 확인했습니다. 손잡이를 꽉 잡으세요!',done:'✅ 준비 완료!',btn:'출발! 🎶'},
+  {type:'anim',anim:'ride',icon:'{itemE}',sound:'whoosh',title:'{item} 출발!',say:'{item} 출발합니다! 꽉 잡으세요! 와아아!',btn:'다 탔어요 🙌'},
+  {type:'end',icon:'🎈',title:'재미있었나요?',say:'다 왔습니다. 안전바를 올리고 천천히 내려 주세요. 또 오세요!'}
+ ]},
+ hosp:{e:'🏥',name:'병원',color:'#06b6d4',soft:'#e3f7fb',steps:[
+  {type:'choose',key:'item',title:'어디가 아파서 왔어요?',say:'안녕하세요. 어디가 아파서 오셨어요?',
+   opts:[['🤧','감기'],['🤢','배'],['🤕','머리'],['🦷','이빨'],['🦵','다리'],['🧸','인형이 아파요']]},
+  {type:'ticket',title:'번호표 받으세요',say:'{num}번입니다. 의자에 앉아서 기다려 주세요.',
+   ticket:{head:'접수 번호표',big:'{num}',rows:[['환자','{name}'],['아픈 곳','{itemE} {item}']]},btn:'의자에서 기다리기 🪑'},
+  {type:'call',title:'{num}번',sub:'{name} 환자분',say:'{num}번, {name} 환자분, 진료실로 들어오세요.',btn:'진료실 들어가기 🚪'},
+  {type:'panel',title:'진료실',say:'안녕하세요, 어디 한번 볼까요?',
+   items:[['🩺','청진기','pop','숨 크게 쉬어 보세요. 후우, 하아.'],['🌡️','체온계','beep','삐빅! 열이 조금 있네요.'],['👄','아 해보세요','pop','아 해보세요. 아아아.'],['💉','주사','pop','따끔! 하나, 둘, 셋! 잘 참았어요.'],['🩹','밴드','success','밴드 붙여 줄게요. 씩씩했어요!'],['💊','약','pop','약은 하루에 세 번, 밥 먹고 드세요.']],btn:'진료 끝 👍'},
+  {type:'end',icon:'🏅',title:'씩씩했어요!',say:'{name} 환자분, 정말 씩씩했어요! 푹 쉬면 금방 나을 거예요.'}
+ ]},
+ food:{e:'🍔',name:'식당',color:'#f08c00',soft:'#fff3dc',steps:[
+  {type:'choose',key:'item',title:'무엇을 드릴까요?',say:'어서 오세요! 주문하시겠어요?',
+   opts:[['🍔','햄버거'],['🍕','피자'],['🍜','라면'],['🍦','아이스크림'],['🍰','케이크'],['🧃','주스']]},
+  {type:'tap',title:'카드를 대 주세요',sub:'여기를 톡!',icon:'💳',sound:'beep',say:'삐빅! 결제되었습니다.',done:'✅ 결제 완료!',btn:'영수증 받기 🧾'},
+  {type:'ticket',title:'주문 번호',say:'주문 번호는 {num}번입니다. 잠시만 기다려 주세요.',
+   ticket:{head:'주문 영수증',big:'{num}',rows:[['손님','{name}'],['메뉴','{itemE} {item}'],['시간','{time}']]},btn:'자리에서 기다리기 ⏳'},
+  {type:'call',title:'{num}번',sub:'{itemE} {item} 나왔습니다!',say:'띵동! {num}번 손님, 주문하신 {item} 나왔습니다!',btn:'받으러 가기 🙌'},
+  {type:'end',icon:'{itemE}',title:'맛있게 드세요!',say:'맛있게 드세요! 또 오세요!'}
+ ]},
+ mart:{e:'🛒',name:'마트',color:'#ef4444',soft:'#fde8e8',steps:[
+  {type:'checkout',title:'물건을 찍어 주세요',say:'어서 오세요! 물건을 하나씩 올려 주세요.',
+   items:[['🍎','사과',2000],['🍌','바나나',3000],['🥛','우유',2500],['🍞','빵',3500],['🍪','과자',1500],['🍓','딸기',5000],['🥚','달걀',4000],['🍦','아이스크림',1000],['🧸','곰인형',8000]],btn:'계산하기 💳'},
+  {type:'tap',title:'카드를 대 주세요',sub:'{total}원',icon:'💳',sound:'beep',say:'삐빅! {total}원 결제되었습니다.',done:'✅ 결제 완료!',btn:'봉투 받기 🛍️'},
+  {type:'end',icon:'🛍️',title:'감사합니다!',say:'감사합니다. 영수증 여기 있어요. 안녕히 가세요!'}
+ ]},
+ truck:{e:'🚚',name:'푸드트럭',color:'#a16207',soft:'#fbf1dc',steps:[
+  {type:'anim',anim:'arrive',icon:'🚚',sound:'horn',title:'푸드트럭이 왔어요!',say:'빵빵! 푸드트럭이 왔어요! 따끈따끈 맛있는 거 사 가세요!',btn:'메뉴 보기 📋'},
+  {type:'choose',key:'item',title:'뭐 드릴까요?',say:'어서 오세요! 오늘 메뉴 골라 보세요.',
+   opts:[['🌭','핫도그'],['🍢','어묵'],['🌮','타코'],['🧇','와플'],['🍗','치킨'],['🥤','슬러시']]},
+  {type:'tap',title:'카드를 대 주세요',sub:'여기를 톡!',icon:'💳',sound:'beep',say:'삐빅! 결제되었습니다. 바로 만들어 드릴게요!',done:'✅ 결제 완료!',btn:'요리 시작 👨‍🍳'},
+  {type:'panel',title:'{item} 만드는 중',say:'맛있게 만들어 드릴게요. 조금만 기다려 주세요!',
+   items:[['🔥','굽기','whoosh','치이익! 노릇노릇 굽는 중이에요.'],['🧂','소스 뿌리기','pop','소스 쭈욱! 맛있겠다.'],['🧀','치즈 올리기','pop','치즈 듬뿍 올려 드릴게요.'],['❤️','사랑 넣기','success','사랑도 듬뿍 넣었어요!'],['📦','포장하기','pop','뜨거우니까 조심하세요!']],btn:'다 됐어요! 🔔'},
+  {type:'call',title:'{num}번',sub:'{itemE} {item} 나왔어요!',say:'{num}번 손님! 따끈따끈한 {item} 나왔어요!',btn:'받으러 가기 🙌'},
+  {type:'anim',anim:'drive',icon:'🚚',sound:'horn',title:'다음 동네로 출발!',say:'오늘 장사 끝! 푸드트럭은 다음 동네로 출발합니다. 빵빵!',btn:'안녕! 👋'},
+  {type:'end',icon:'{itemE}',title:'맛있게 드세요!',say:'맛있게 드세요! 푸드트럭은 다음에 또 올게요!'}
+ ]},
+ bus:{e:'🚌',name:'버스',color:'#65a30d',soft:'#eef7df',steps:[
+  {type:'tap',title:'교통카드를 찍어 주세요',sub:'여기를 톡!',icon:'💳',sound:'beep',say:'삑! 안쪽으로 들어가 주세요.',done:'✅ 탑승!',btn:'내릴 곳 고르기 🗺️'},
+  {type:'choose',key:'dest',title:'어디서 내릴까요?',say:'어디까지 가세요?',
+   opts:[['🏫','어린이집'],['🛝','놀이터'],['🐟','수족관'],['🏪','편의점'],['🏠','우리 집'],['🏰','공주님 성']]},
+  {type:'anim',anim:'drive',icon:'🚌',sound:'horn',title:'출발합니다!',say:'버스 출발합니다. 손잡이 꼭 잡으세요!',btn:'버스 안으로 🪑'},
+  {type:'panel',title:'버스 타고 가는 중',say:'이번 버스는 {dest}까지 갑니다.',
+   items:[['🔔','하차벨','chime','다음 정류장에서 내립니다.'],['📢','안내 방송','chime','이번 정류장은 {dest}, {dest}입니다.'],['🛑','멈춰요','whoosh','버스가 멈춥니다. 꽉 잡으세요!'],['👵','자리 양보','success','할머니, 여기 앉으세요! 정말 착하다!'],['📯','빵빵','horn','빵빵! 비켜 주세요!']],btn:'내리기 🚏'},
+  {type:'end',icon:'🚏',title:'{dest} 도착!',say:'{dest} 정류장입니다. 내리실 때 조심하세요!'}
+ ]},
+ rocket:{e:'🚀',name:'우주선',color:'#4338ca',soft:'#eceafd',steps:[
+  {type:'choose',key:'dest',title:'어디로 날아갈까요?',say:'우주 정거장에 온 걸 환영합니다! 어디로 가시나요?',
+   opts:[['🌙','달'],['🔴','화성'],['🪐','토성'],['⭐','별나라'],['👽','외계인 별'],['🌈','무지개 행성']]},
+  {type:'ticket',title:'우주 탑승권!',say:'{name} 우주인님, {gate}번 발사대로 가 주세요.',
+   ticket:{head:'SPACE PASS · 우주 탑승권',big:'{destE} {dest}',rows:[['우주인','{name}'],['좌석','{seat}'],['발사대','{gate}번'],['출발','{time}']],barcode:true},btn:'발사대로 🚶'},
+  {type:'panel',title:'발사 준비',say:'우주복을 입고 발사 준비를 해 주세요.',
+   items:[['🧑‍🚀','우주복','pop','우주복 입었어요! 멋져요!'],['⛑️','헬멧','pop','헬멧 딸깍! 숨쉬기 확인!'],['🔘','엔진 버튼','beep','삐빅! 엔진 준비 완료!'],['📡','관제탑','chime','여기는 관제탑! 발사 준비 됐나요?']],btn:'카운트다운! 🔥'},
+  {type:'countdown',title:'발사 준비!',say:'발사! 슈우우웅!'},
+  {type:'anim',anim:'rocket',icon:'🚀',sound:'whoosh',title:'발사!',say:'우주선이 하늘로 올라갑니다! 슈우우웅!',btn:'우주로 🌌'},
+  {type:'panel',title:'우주를 날고 있어요',say:'지금 우주를 날고 있습니다. 창밖에 별이 반짝반짝!',
+   items:[['🎈','둥둥','pop','몸이 둥둥 떠다녀요! 무중력이에요.'],['👽','외계인','pop','안녕? 나는 외계인이야! 반가워!'],['🌠','별똥별','whoosh','별똥별이 지나가요! 소원을 빌어 봐요.'],['📡','지구에 연락','beep','여기는 우주선! 지구 나와라, 오버!'],['🌍','지구 보기','pop','저기 파란 게 지구예요. 우리 집도 저기 있어요.']],btn:'착륙하기 🛬'},
+  {type:'end',icon:'{destE}',title:'{dest} 도착!',say:'{dest}에 무사히 도착했습니다! {name} 우주인님, 정말 멋져요!'}
+ ]},
+ salon:{e:'💇',name:'미용실',color:'#c026d3',soft:'#fbe8fd',steps:[
+  {type:'choose',key:'item',title:'어떤 머리로 할까요?',say:'어서 오세요! 오늘은 어떤 머리로 해 드릴까요?',
+   opts:[['✂️','짧은 머리'],['👸','공주 머리'],['🦁','사자 머리'],['🌈','무지개 머리'],['🎀','리본 머리'],['🦔','뾰족 머리']]},
+  {type:'panel',title:'{item} 만드는 중',say:'의자에 앉아 주세요. 예쁘게 해 드릴게요!',
+   items:[['🧴','샴푸','pop','머리 감을게요. 거품 보글보글!'],['💦','헹구기','whoosh','쏴아아! 눈 꼭 감으세요.'],['✂️','가위','snip','싹둑싹둑! 움직이면 안 돼요.'],['💨','드라이기','whoosh','위이잉! 머리 말릴게요.'],['🎀','꾸미기','pop','반짝반짝 핀 꽂아 줄게요.'],['🪞','거울','success','거울 보세요! 너무 멋져요!']],btn:'다 됐어요! ✨'},
+  {type:'tap',title:'카드를 대 주세요',sub:'여기를 톡!',icon:'💳',sound:'beep',say:'삐빅! 결제되었습니다. 감사합니다!',done:'✅ 결제 완료!',btn:'완성 확인 🪞'},
+  {type:'end',icon:'💖',title:'{item} 완성!',say:'{name} 손님, {item} 정말 멋져요! 또 오세요!'}
+ ]},
+ cinema:{e:'🎬',name:'영화관',color:'#334155',soft:'#e9edf2',steps:[
+  {type:'choose',key:'item',title:'무슨 영화 볼까요?',say:'어서 오세요! 어떤 영화 보시겠어요?',
+   opts:[['🦖','공룡 대모험'],['🚀','우주 탐험대'],['🐳','바다 친구들'],['🚒','출동 소방차'],['🧚','요정 나라'],['🐶','강아지 탐정']]},
+  {type:'ticket',title:'영화표 나왔어요!',say:'{item} 영화표입니다. {gate}관으로 가 주세요.',
+   ticket:{head:'CINEMA · 영화표',big:'{itemE} {item}',rows:[['손님','{name}'],['상영관','{gate}관'],['좌석','{seat}'],['시작','{time}']],barcode:true},btn:'매점 들르기 🍿'},
+  {type:'panel',title:'매점이에요',say:'영화 보면서 먹을 간식 드릴까요?',
+   items:[['🍿','팝콘','pop','고소한 팝콘 나왔습니다!'],['🥤','음료','pop','시원한 음료 드릴게요.'],['🌭','핫도그','pop','따끈한 핫도그 여기 있어요.'],['🍫','초콜릿','pop','달콤한 초콜릿이에요.']],btn:'상영관으로 🚶'},
+  {type:'tap',title:'영화표를 보여 주세요',sub:'여기를 톡!',icon:'🎟️',sound:'beep',say:'확인했습니다. {gate}관으로 들어가세요. 재밌게 보세요!',done:'✅ 입장!',btn:'자리에 앉기 💺'},
+  {type:'panel',title:'영화 시작!',say:'영화가 곧 시작됩니다. 휴대폰은 꺼 주세요.',
+   items:[['🌑','불 끄기','chime','불이 꺼집니다. 영화가 시작돼요!'],['🤫','쉿','pop','쉿! 조용히 봐요.'],['😆','하하하','pop','하하하! 너무 웃겨요!'],['😱','깜짝','whoosh','앗! 깜짝이야!'],['👏','박수','success','짝짝짝! 정말 재밌는 영화였어요.']],btn:'영화 끝 🎬'},
+  {type:'end',icon:'🍿',title:'재밌었나요?',say:'영화가 모두 끝났습니다. 두고 가는 물건 없이 안녕히 가세요!'}
+ ]},
+ vet:{e:'🐶',name:'동물병원',color:'#0d9488',soft:'#e0f5f2',steps:[
+  {type:'choose',key:'item',title:'누가 아파서 왔어요?',say:'안녕하세요, 동물병원입니다. 누가 아파서 왔나요?',
+   opts:[['🐶','강아지'],['🐱','고양이'],['🐰','토끼'],['🐹','햄스터'],['🐢','거북이'],['🦜','앵무새']]},
+  {type:'ticket',title:'번호표 받으세요',say:'{num}번입니다. {item} 데리고 잠시만 기다려 주세요.',
+   ticket:{head:'동물병원 번호표',big:'{num}',rows:[['보호자','{name}'],['환자','{itemE} {item}']]},btn:'기다리기 🪑'},
+  {type:'call',title:'{num}번',sub:'{itemE} {item} 보호자님',say:'{num}번, {item} 보호자님, 진료실로 들어오세요.',btn:'진료실 들어가기 🚪'},
+  {type:'panel',title:'{itemE} 진료 중',say:'우리 {item} 어디가 아픈지 볼까요?',
+   items:[['🩺','청진기','pop','콩닥콩닥, 심장 소리가 건강해요.'],['⚖️','몸무게','beep','삐빅! 몸무게를 재 볼게요.'],['🦷','이빨 보기','pop','아~ 이빨도 튼튼해요.'],['💉','주사','pop','따끔! 하나, 둘, 셋! 잘 참았어요.'],['🩹','붕대','success','붕대 감아 줄게요. 금방 나을 거예요.'],['🦴','간식','success','잘 참았으니까 간식 줄게요!']],btn:'진료 끝 👍'},
+  {type:'end',icon:'{itemE}',title:'{item} 다 나았어요!',say:'{item} 아주 건강해요! {name} 보호자님, 잘 돌봐 주세요!'}
+ ]},
+ fire:{e:'🚒',name:'소방관',color:'#b91c1c',soft:'#fde6e6',steps:[
+  {type:'tap',title:'불이야! 119에 전화해요',sub:'여기를 톡!',icon:'☎️',sound:'ring',say:'네, 119입니다! 금방 출동하겠습니다!',done:'✅ 신고 접수!',btn:'출동 장소 보기 🗺️'},
+  {type:'choose',key:'dest',title:'어디로 출동할까요?',say:'출동! 어디에 불이 났나요?',
+   opts:[['🏠','우리 동네'],['🏫','어린이집'],['🌳','숲속'],['🏢','높은 빌딩'],['🏰','성'],['🥐','빵집']]},
+  {type:'panel',title:'출동 준비!',say:'{name} 소방관님, 빨리 준비해 주세요!',
+   items:[['🧥','소방복','pop','소방복 입었어요!'],['⛑️','헬멧','pop','헬멧 딱! 준비 완료!'],['🚨','사이렌','siren','삐뽀삐뽀! 출동!']],btn:'출동! 🚒'},
+  {type:'anim',anim:'drive',icon:'🚒',sound:'siren',title:'출동합니다!',say:'삐뽀삐뽀! 소방차 출동합니다! 길을 비켜 주세요!',btn:'도착! 🔥'},
+  {type:'panel',title:'불을 꺼요!',say:'{dest}에 도착했습니다. 불을 꺼 주세요!',
+   items:[['🧯','소화기','whoosh','치이익! 불을 꺼요.'],['🚿','물 대포','whoosh','쏴아아아! 물을 뿌려요.'],['🪜','사다리','pop','사다리 올라갑니다! 조심조심.'],['🐱','구조하기','success','고양이 구조 완료! 이제 안전해요.']],btn:'불 다 껐어요! ✅'},
+  {type:'end',icon:'🏅',title:'불을 다 껐어요!',say:'{dest}의 불이 모두 꺼졌습니다. {name} 소방관님, 정말 용감했어요!'}
+ ]},
+ delivery:{e:'📦',name:'택배',color:'#92400e',soft:'#f6ece2',steps:[
+  {type:'choose',key:'item',title:'무엇을 배달할까요?',say:'{name} 택배 기사님, 오늘은 어떤 택배를 배달할까요?',
+   opts:[['🧸','장난감'],['🍎','과일'],['🎂','생일 케이크'],['📚','책'],['👟','신발'],['🎁','선물']]},
+  {type:'ticket',title:'택배 송장',say:'{item} 택배입니다. 조심조심 배달해 주세요.',
+   ticket:{head:'택배 송장',big:'📦 {itemE}',rows:[['물건','{item}'],['배달원','{name}'],['받는 곳','우리 집'],['번호','{num}']],barcode:true},btn:'트럭에 싣기 🚛'},
+  {type:'anim',anim:'drive',icon:'🚛',sound:'horn',title:'배달 출발!',say:'택배 트럭 출발합니다! 부릉부릉!',btn:'도착! 🏠'},
+  {type:'tap',title:'띵동! 초인종을 눌러요',sub:'여기를 톡!',icon:'🔔',sound:'chime',say:'택배 왔습니다! {item} 배달 왔어요!',done:'✅ 배달 완료!',btn:'끝내기 👍'},
+  {type:'end',icon:'📦',title:'배달 완료!',say:'{name} 택배 기사님, 배달 완료! 수고하셨습니다!'}
+ ]},
+ carwash:{e:'🧽',name:'세차장',color:'#0284c7',soft:'#e2f2fb',steps:[
+  {type:'choose',key:'item',title:'어떤 차를 씻을까요?',say:'세차장에 오신 걸 환영합니다! 어떤 차를 씻어 드릴까요?',
+   opts:[['🚗','자동차'],['🚙','지프'],['🚌','버스'],['🚒','소방차'],['🚜','트랙터'],['🏎️','경주차']]},
+  {type:'panel',title:'{itemE} 세차 중',say:'창문 꼭 닫아 주세요! 세차 시작합니다!',
+   items:[['💦','물 뿌리기','whoosh','쏴아아! 물 뿌려요.'],['🫧','거품','pop','거품 보글보글!'],['🧽','문지르기','pop','쓱싹쓱싹 깨끗하게!'],['🌀','큰 솔','whoosh','위이잉! 큰 솔이 돌아가요.'],['💨','말리기','whoosh','바람 슝! 물기를 말려요.'],['✨','왁스','success','반짝반짝 광 내기!']],btn:'세차 끝! ✨'},
+  {type:'end',icon:'{itemE}',title:'반짝반짝!',say:'{item} 세차 끝! 반짝반짝 새 차 같아요!'}
+ ]}
+};
+const GROUPS=[['🚀 타고 가요',['home','plane','train','bus','rocket']],['🛍️ 가게 놀이',['food','truck','mart','salon','cinema','park']],['🦸 일하는 사람',['hosp','vet','fire','delivery','carwash']]];
+
+/* ===== 상태 ===== */
+const S={name:'',dest:null,item:null,cart:[]};
+let voiceOn=true, cur=null, curId=null, idx=0, tok=0, bubbleEl=null;
+try{S.name=localStorage.getItem('rp_name')||'';voiceOn=localStorage.getItem('rp_voice')!=='0';}catch(e){}
+
+const $=s=>document.querySelector(s);
+const rand=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+function el(tag,cls,html){const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function who(){return S.name.trim()||'꼬마';}
+function total(){return S.cart.reduce((a,c)=>a+c.p,0);}
+function val(k){
+  switch(k){
+    case 'name':return who();
+    case 'dest':return S.dest?S.dest.label:'';
+    case 'destE':return S.dest?S.dest.e:'';
+    case 'item':return S.item?S.item.label:'';
+    case 'itemE':return S.item?S.item.e:'';
+    case 'total':return total().toLocaleString('ko-KR');
+    default:return S[k]!=null?S[k]:'';
+  }
+}
+function fill(t,html){return String(t).replace(/\{(\w+)\}/g,(m,k)=>html?esc(val(k)):val(k));}
+
+/* ===== 소리 ===== */
+let ac=null;
+function A(){
+  if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}}
+  if(ac.state==='suspended')ac.resume();
+  return ac;
+}
+function tone(f,t0,dur,type,vol,f2){
+  const a=A();if(!a)return;const t=a.currentTime+t0;
+  const o=a.createOscillator(),g=a.createGain();
+  o.type=type||'sine';o.frequency.setValueAtTime(f,t);
+  if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||0.25,t+0.015);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur+0.05);
+}
+const SND={
+  beep(){tone(1760,0,0.09,'square',0.1);tone(1760,0.13,0.13,'square',0.1);},
+  chime(){tone(784,0,0.9,'sine',0.28);tone(659,0.35,0.9,'sine',0.28);tone(523,0.7,1.3,'sine',0.28);},
+  pop(){tone(480,0,0.13,'sine',0.25,980);},
+  success(){[523,659,784,1047].forEach((f,i)=>tone(f,i*0.11,0.35,'triangle',0.2));},
+  horn(){tone(220,0,0.75,'sawtooth',0.07);tone(277,0,0.75,'sawtooth',0.07);tone(330,0,0.75,'sawtooth',0.05);},
+  siren(){for(let i=0;i<4;i++){tone(960,i*0.5,0.25,'square',0.07);tone(770,i*0.5+0.25,0.25,'square',0.07);}},
+  snip(){tone(2600,0,0.04,'square',0.1);tone(2200,0.12,0.04,'square',0.1);tone(2600,0.3,0.04,'square',0.1);tone(2200,0.42,0.04,'square',0.1);},
+  ring(){for(let r=0;r<2;r++)for(let i=0;i<10;i++)tone(i%2?1300:1100,r*0.8+i*0.05,0.05,'sine',0.18);},
+  print(){for(let i=0;i<14;i++)tone(280+Math.random()*90,i*0.095,0.045,'square',0.04);},
+  whoosh(){
+    const a=A();if(!a)return;const d=2;const b=a.createBuffer(1,a.sampleRate*d,a.sampleRate);const ch=b.getChannelData(0);
+    for(let i=0;i<ch.length;i++)ch[i]=Math.random()*2-1;
+    const s=a.createBufferSource();s.buffer=b;const f=a.createBiquadFilter();f.type='bandpass';f.Q.value=1.2;
+    const t=a.currentTime;f.frequency.setValueAtTime(250,t);f.frequency.exponentialRampToValueAtTime(1800,t+1.2);f.frequency.exponentialRampToValueAtTime(500,t+d);
+    const g=a.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.35,t+0.6);g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+    s.connect(f).connect(g).connect(a.destination);s.start(t);s.stop(t+d);
+  }
+};
+
+/* 엔진 소리 (계속 울림) */
+let eng=null;
+function engineOn(){
+  const a=A();if(!a||eng)return;
+  const b=a.createBuffer(1,a.sampleRate*2,a.sampleRate);const ch=b.getChannelData(0);let last=0;
+  for(let i=0;i<ch.length;i++){last=(last+0.02*(Math.random()*2-1))/1.02;ch[i]=last*3.5;}
+  const s=a.createBufferSource();s.buffer=b;s.loop=true;
+  const f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=500;
+  const g=a.createGain();const t=a.currentTime;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.5,t+2);
+  s.connect(f).connect(g).connect(a.destination);s.start();eng={s,g,f};
+}
+function engineOff(){
+  if(!eng||!ac)return;const t=ac.currentTime,e=eng;eng=null;
+  e.g.gain.cancelScheduledValues(t);e.g.gain.setValueAtTime(Math.max(e.g.gain.value,0.0001),t);e.g.gain.exponentialRampToValueAtTime(0.0001,t+1.5);e.s.stop(t+1.6);
+}
+
+/* 화면 꺼짐 방지 */
+let wl=null;
+async function keepAwake(){try{if('wakeLock' in navigator&&!wl){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null;});}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&cur)keepAwake();});
+
+/* ===== 음성 안내 ===== */
+const hasTTS='speechSynthesis' in window;let koVoice=null;
+function loadVoices(){const v=speechSynthesis.getVoices();koVoice=v.find(x=>x.lang&&x.lang.toLowerCase().startsWith('ko'))||null;}
+if(hasTTS){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}
+function say(t){
+  if(bubbleEl)bubbleEl.textContent=t;
+  if(!voiceOn||!hasTTS)return;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';if(koVoice)u.voice=koVoice;u.rate=0.95;u.pitch=1.15;speechSynthesis.speak(u);}catch(e){}
+}
+function later(t,ms){const k=tok;setTimeout(()=>{if(k===tok)say(t);},ms);}
+function unlockTTS(){if(!hasTTS||!voiceOn)return;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u);}catch(e){}}
+function setVoiceBtn(){$('#voiceBtn').textContent=voiceOn?'🔊':'🔇';}
+
+/* ===== 공통 조각 ===== */
+function setTheme(c,s){document.documentElement.style.setProperty('--accent',c);document.documentElement.style.setProperty('--soft',s);}
+function title(m,t){m.append(el('h1','t',fill(t,1)));}
+function bub(m){const b=el('div','bubble','<i>📢</i><span></span>');m.append(b);bubbleEl=b.querySelector('span');}
+function nextBtn(label,delay,hidden){
+  const b=el('button','next',fill(label,1));b.onclick=()=>{SND.pop();next();};
+  if(!hidden){if(delay){setTimeout(()=>b.classList.add('show'),delay);}else b.classList.add('show');}
+  return b;
+}
+function barcode(){
+  let x=0;const st=[];
+  while(x<100){const w=Math.min(Math.random()*1.7+0.4,100-x);st.push(`${Math.random()>0.45?'#222':'#fff'} ${x.toFixed(2)}% ${(x+w).toFixed(2)}%`);x+=w;}
+  return `linear-gradient(90deg,${st.join(',')})`;
+}
+function confetti(){
+  const set=['🎉','⭐','🎈','✨','💖','🌟'];
+  for(let i=0;i<34;i++){
+    const c=el('div','conf',set[i%set.length]);c.style.left=Math.random()*100+'vw';
+    c.style.animationDuration=(2.2+Math.random()*2)+'s';c.style.animationDelay=(Math.random()*0.8)+'s';
+    document.body.append(c);setTimeout(()=>c.remove(),5200);
+  }
+}
+const CLOUDS=(e)=>`<div class="cloud" style="top:10%;animation-duration:6s">${e}</div><div class="cloud" style="top:36%;animation-duration:9s;animation-delay:-4s">${e}</div><div class="cloud" style="top:60%;animation-duration:7s;animation-delay:-2s;font-size:40px">${e}</div>`;
+
+/* ===== 화면 종류별 ===== */
+const R={
+  choose(st,m){
+    title(m,st.title);bub(m);let lock=false;const g=el('div','opts');
+    st.opts.forEach(([e,l])=>{
+      const o=el('button','opt',`<span class="e">${e}</span>${l}`);
+      o.onclick=()=>{if(lock)return;lock=true;S[st.key]={e,label:l};SND.pop();o.classList.add('pick');say(l+'!');const k=tok;setTimeout(()=>{if(k===tok)next();},900);};
+      g.append(o);
+    });
+    m.append(g);say(fill(st.say));
+  },
+  ticket(st,m){
+    title(m,st.title);bub(m);const t=st.ticket;
+    const p=el('div','printer');p.append(el('div','slot'));const clip=el('div','tclip');const tk=el('div','ticket');
+    tk.append(el('div','t-head',fill(t.head,1)),el('div','t-big',fill(t.big,1)));
+    const rows=el('div','t-rows');t.rows.forEach(([a,b])=>rows.append(el('div','',`<span>${a}</span><b>${fill(b,1)}</b>`)));tk.append(rows);
+    if(t.barcode){const bc=el('div','barcode');bc.style.background=barcode();tk.append(bc);}
+    clip.append(tk);p.append(clip);m.append(p);
+    SND.print();later(fill(st.say),1000);m.append(nextBtn(st.btn,1500));
+  },
+  tap(st,m){
+    title(m,st.title);if(st.sub)m.append(el('p','sub',fill(st.sub,1)));bub(m);
+    const t=el('button','tapper',fill(st.icon,1));const d=el('div','done','');const nb=nextBtn(st.btn,0,true);
+    t.onclick=()=>{(SND[st.sound]||SND.beep)();t.classList.remove('flash');void t.offsetWidth;t.classList.add('ok','flash');d.textContent=st.done;later(fill(st.say),250);nb.classList.add('show');};
+    m.append(t,d,nb);say(fill(st.title));
+  },
+  anim(st,m){
+    title(m,st.title);bub(m);
+    const s=el('div','stage s-'+st.anim);
+    const onRoad=['train','drive','arrive'].includes(st.anim);
+    s.innerHTML=CLOUDS(st.anim==='ride'?'✨':st.anim==='rocket'?'⭐':'☁️')+(onRoad?`<div class="ground${st.anim==='train'?'':' road'}"></div>`:'')+`<div class="actor">${fill(st.icon,1)}</div><div class="hint">톡 누르면 한 번 더!</div>`;
+    const a=s.querySelector('.actor');
+    const play=()=>{a.className='actor';void a.offsetWidth;a.className='actor a-'+st.anim;(SND[st.sound]||SND.whoosh)();};
+    s.onclick=()=>{play();say(fill(st.say));};
+    m.append(s);play();say(fill(st.say));m.append(nextBtn(st.btn,2600));
+  },
+  panel(st,m){
+    title(m,st.title);bub(m);const g=el('div','acts');
+    st.items.forEach(([e,l,snd,line])=>{
+      const b=el('button','act',`<span class="e">${e}</span>${l}`);
+      b.onclick=()=>{(SND[snd]||SND.pop)();b.classList.remove('wig');void b.offsetWidth;b.classList.add('wig');later(fill(line),snd==='chime'?1300:150);};
+      g.append(b);
+    });
+    m.append(g,nextBtn(st.btn,800));say(fill(st.say));
+  },
+  call(st,m){
+    const b=el('div','board','<div class="lab">⏳ 잠시만 기다려 주세요</div><div class="n wait">· · ·</div><div class="who"></div>');
+    m.append(b);bub(m);
+    const r=el('button','small-btn','🔔 다시 부르기');r.style.visibility='hidden';
+    const nb=nextBtn(st.btn,0,true);
+    const ring=()=>{
+      b.querySelector('.lab').textContent='🔔 딩동! 호출';
+      const n=b.querySelector('.n');n.className='n';n.innerHTML=fill(st.title,1);void n.offsetWidth;n.classList.add('blink');
+      b.querySelector('.who').innerHTML=fill(st.sub,1);
+      SND.chime();later(fill(st.say),1400);r.style.visibility='visible';setTimeout(()=>nb.classList.add('show'),1800);
+    };
+    r.onclick=ring;m.append(r,nb);say('잠시만 기다려 주세요.');
+    const k=tok;setTimeout(()=>{if(k===tok)ring();},3500);
+  },
+  cockpit(st,m){
+    title(m,st.title);bub(m);
+    const s=el('div','stage s-sky');s.innerHTML=CLOUDS('☁️')+'<div class="actor">✈️</div><div class="cd"></div>';
+    const a=s.querySelector('.actor'),cd=s.querySelector('.cd');
+    const g=el('div','acts bigacts');const nb=nextBtn(st.btn,0,true);const k=tok;
+    const fly=on=>{a.className='actor'+(on?' a-fly':'');};
+    st.items.forEach(([e,l,act,line])=>{
+      const b=el('button','act',`<span class="e">${e}</span>${l}`);
+      b.onclick=()=>{
+        b.classList.remove('wig');void b.offsetWidth;b.classList.add('wig');
+        if(act==='takeoff'){
+          say(fill(line));let c=3;
+          const tick=()=>{if(k!==tok)return;
+            if(c>0){cd.textContent=c;tone(880,0,0.15,'square',0.1);c--;setTimeout(tick,1000);}
+            else{cd.textContent='🛫';engineOn();SND.whoosh();fly(true);say('이륙! 부우우웅!');setTimeout(()=>{if(k===tok)cd.textContent='';},1500);}
+          };setTimeout(tick,1600);
+        }else if(act==='shake'){
+          SND.whoosh();s.classList.remove('shake');void s.offsetWidth;s.classList.add('shake');say(fill(line));
+        }else if(act==='up'){
+          SND.whoosh();fly(true);say(fill(line));
+        }else if(act==='land'){
+          SND.chime();later(fill(line),1300);
+          setTimeout(()=>{if(k!==tok)return;engineOff();fly(false);SND.pop();nb.classList.add('show');},3200);
+        }else{SND.pop();say(fill(line));}
+      };
+      g.append(b);
+    });
+    m.append(s,g,nb);say(fill(st.say));
+  },
+  countdown(st,m){
+    title(m,st.title);bub(m);const n=el('div','count','');m.append(n);
+    const words=['','하나','둘','셋'];let c=3;const k=tok;
+    const tick=()=>{
+      if(k!==tok)return;
+      n.classList.remove('pop');void n.offsetWidth;n.classList.add('pop');
+      if(c>0){n.textContent=c;tone(880,0,0.15,'square',0.1);say(words[c]);c--;setTimeout(tick,1100);}
+      else{n.textContent='🔥';say(fill(st.say));setTimeout(()=>{if(k===tok)next();},800);}
+    };
+    setTimeout(tick,500);
+  },
+  checkout(st,m){
+    title(m,st.title);bub(m);
+    const wrap=el('div','mart'),shelf=el('div','shelf'),side=el('div','');
+    const lcd=el('div','lcd','<span>🛒 물건을 찍어 주세요</span>');const rc=el('div','receipt');const nb=nextBtn(st.btn,0,true);
+    const draw=()=>{
+      if(!S.cart.length){rc.innerHTML='<div class="empty">장바구니가 비었어요</div>';nb.classList.remove('show');return;}
+      const g=new Map();S.cart.forEach(c=>{const x=g.get(c.l)||{e:c.e,n:0,p:0};x.n++;x.p+=c.p;g.set(c.l,x);});
+      rc.innerHTML=[...g].map(([l,x])=>`<div class="line"><span>${x.e} ${l} ×${x.n}</span><span>${x.p.toLocaleString('ko-KR')}원</span></div>`).join('')+`<div class="sum"><span>합계</span><span>${total().toLocaleString('ko-KR')}원</span></div>`;
+      rc.scrollTop=rc.scrollHeight;nb.classList.add('show');
+    };
+    st.items.forEach(([e,l,p])=>{
+      const b=el('button','goods',`<span class="e">${e}</span>${l}<small>${p.toLocaleString('ko-KR')}원</small>`);
+      b.onclick=()=>{S.cart.push({e,l,p});SND.beep();lcd.innerHTML=`<span>${e} ${l}</span><b>${p.toLocaleString('ko-KR')}원</b>`;lcd.classList.remove('hit');void lcd.offsetWidth;lcd.classList.add('hit');say(l);draw();};
+      shelf.append(b);
+    });
+    const clr=el('button','small-btn','🔄 다시 담기');
+    clr.onclick=()=>{S.cart=[];SND.pop();lcd.innerHTML='<span>🛒 물건을 찍어 주세요</span>';draw();};
+    side.append(lcd,rc,clr);wrap.append(shelf,side);m.append(wrap,nb);draw();say(fill(st.say));
+  },
+  end(st,m){
+    m.append(el('div','big',fill(st.icon,1)));title(m,st.title);bub(m);
+    const row=el('div','row');
+    const a=el('button','next show','🔁 한 번 더');a.onclick=()=>{SND.pop();start(curId);};
+    const h=el('button','next show alt','🏠 다른 놀이');h.onclick=()=>{SND.pop();home();};
+    row.append(a,h);m.append(row);SND.success();confetti();later(fill(st.say),500);
+  }
+};
+
+/* ===== 흐름 ===== */
+function render(){
+  tok++;bubbleEl=null;engineOff();const st=cur.steps[idx];const m=$('#screen');
+  m.innerHTML='';m.classList.remove('in');void m.offsetWidth;m.classList.add('in');window.scrollTo(0,0);
+  const dots=el('div','dots');cur.steps.forEach((_,i)=>dots.append(el('i',i===idx?'on':(i<idx?'past':''))));m.append(dots);
+  R[st.type](st,m);
+}
+function next(){idx++;if(idx>=cur.steps.length)home();else render();}
+function back(){if(!cur)return;SND.pop();if(idx>0){idx--;render();}else home();}
+function start(id){
+  curId=id;cur=SC[id];idx=0;S.dest=null;S.item=null;S.cart=[];
+  S.seat=rand(1,32)+'ABCDEF'[rand(0,5)];S.gate=rand(1,24);S.num=rand(1,50);S.car=rand(1,8);
+  const d=new Date(Date.now()+15*60000);
+  S.time=d.toLocaleTimeString('ko-KR',{hour:'numeric',minute:'2-digit'});S.date=`${d.getMonth()+1}월 ${d.getDate()}일`;
+  setTheme(cur.color,cur.soft);$('#title').textContent=cur.e+' '+cur.name+' 놀이';
+  $('#homeBtn').style.visibility=$('#backBtn').style.visibility='visible';
+  A();unlockTTS();keepAwake();render();
+}
+function home(){
+  tok++;cur=null;bubbleEl=null;engineOff();if(wl){try{wl.release();}catch(e){}wl=null;}if(hasTTS)try{speechSynthesis.cancel();}catch(e){}
+  setTheme('#7c5cff','#fff6e5');$('#title').textContent='🎪 역할놀이 매표소';
+  $('#homeBtn').style.visibility=$('#backBtn').style.visibility='hidden';
+  const m=$('#screen');m.innerHTML='';m.classList.remove('in');void m.offsetWidth;m.classList.add('in');
+  const w=el('div','home');w.append(el('h1','','오늘은 어디 갈까? 🎪'));
+  const nb=el('label','namebox','<span>👤 손님 이름</span>');
+  const inp=el('input');inp.placeholder='예: 서윤';inp.maxLength=8;inp.value=S.name;
+  inp.oninput=()=>{S.name=inp.value;try{localStorage.setItem('rp_name',S.name);}catch(e){}};
+  nb.append(inp);w.append(nb);
+  GROUPS.forEach(([gname,ids])=>{
+    w.append(el('h3','gh',gname));const g=el('div','cards');
+    ids.forEach(id=>{const s=SC[id];const c=el('button','card',`<span class="e">${s.e}</span>${s.name}`);c.style.background=s.color;c.onclick=()=>{SND.pop();start(id);};g.append(c);});
+    w.append(g);
+  });
+  w.append(el('p','tip','💡 엄마·아빠는 직원 역할!<br>📢 말풍선 대사를 같이 읽어 주거나, 🔊 버튼으로 안내 음성을 켜고 끌 수 있어요.'));
+  m.append(w);
+}
+$('#homeBtn').onclick=()=>{SND.pop();home();};
+$('#backBtn').onclick=back;
+$('#voiceBtn').onclick=()=>{voiceOn=!voiceOn;try{localStorage.setItem('rp_voice',voiceOn?'1':'0');}catch(e){}setVoiceBtn();if(!voiceOn&&hasTTS)try{speechSynthesis.cancel();}catch(e){}else say('안내 음성을 켰어요.');};
+setVoiceBtn();home();
+</script>
+</body>
+</html>
