@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 공통 서비스</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#8AB8FF;border:1px solid #2A4A75;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+</style>
+<script src="./runtime.js"></script>
+</head>
+<body>
+<script type="text/x-dc-template" id="dc-template">
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<a href="Main.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; background: #1E252F; color: #C9D1D9; border-radius: 4px; padding: 2px 6px">AI</span><h1 style="margin: 0; font-size: 18px">AI 공통 서비스</h1></div>
+<div class="muted" style="font-size: 12px">모델 버전 · 추론 지연 · 가속기 사용률 · 입력 큐 · 모델 교체</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span class="mono" style="font-size: 12px; color: #9AA4B2">시뮬레이션 T+{{t}}s</span>
+<button type="button" class="btn" onClick="{{toggle}}">{{runLabel}}</button>
+<sc-for list="{{scenarios}}" as="s" hint-placeholder-count="2"><button type="button" class="btn" onClick="{{s.run}}" style="background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for>
+<button type="button" class="btn" onClick="{{reset}}">초기화</button>
+</div>
+</header>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 40px">
+<aside style="flex: 1 1 300px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section class="card" aria-labelledby="sc-t">
+<h2 id="sc-t" class="h2">시나리오 진행</h2>
+<sc-if value="{{noSc}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">상단 시나리오 버튼을 누르면 단계별로 진행됩니다.</div></sc-if>
+<sc-if value="{{hasSc}}" hint-placeholder-val="{{false}}">
+<div style="font-size: 13px; font-weight: 500; margin-bottom: 6px">{{scTitle}}</div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; padding: 6px 0"><span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: {{s.dot}}; margin-top: 5px"></span><div><div style="font-size: 13px; color: {{s.fg}}">{{s.text}}</div><div class="mono" style="font-size: 11px; color: #8B95A3">{{s.at}} · {{s.tag}}</div></div></div>
+</sc-for>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="spec-t">
+<h2 id="spec-t" class="h2">기능 명세 <span class="sub">{{specCount}}개</span></h2>
+<sc-for list="{{spec}}" as="f" hint-placeholder-count="7">
+<div style="padding: 9px 0; border-bottom: 1px solid #1E252F">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; color: #8AB8FF">{{f.id}}</span><span style="font-size: 13px; font-weight: 500; flex: 1">{{f.name}}</span><span style="font-size: 10px; color: {{f.pc}}; border: 1px solid {{f.pc}}; border-radius: 10px; padding: 0 6px; white-space: nowrap">{{f.ph}}</span></div>
+<div class="muted" style="font-size: 12px; margin-top: 2px">{{f.desc}}</div>
+</div>
+</sc-for>
+</section>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="5">
+<div class="card" style="padding: 14px"><div class="muted" style="font-size: 12px">{{k.label}}</div><div class="mono" style="font-size: 22px; font-weight: 500; color: {{k.c}}">{{k.v}}</div><div class="muted" style="font-size: 12px">{{k.sub}}</div></div>
+</sc-for>
+</div>
+
+<section class="card" aria-labelledby="lt-t">
+<h2 id="lt-t" class="h2">추론 지연 p99 <span class="sub">최근 30초 · 예산 50ms</span><span class="tag">AI-02</span></h2>
+<div style="position: relative; height: 140px; border-bottom: 1px solid #2A313C">
+<div style="position: absolute; left: 0; right: 0; bottom: 62.5%; border-top: 1px dashed #F85149"></div>
+<span class="mono" style="position: absolute; right: 0; bottom: 63.5%; font-size: 10px; color: #F85149">50ms</span>
+<div style="position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 3px">
+<sc-for list="{{lat}}" as="l" hint-placeholder-count="30"><div style="flex: 1; height: {{l.h}}; background: {{l.c}}; border-radius: 2px 2px 0 0"></div></sc-for>
+</div>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<section class="card" aria-labelledby="ac-t" style="flex: 1 1 320px">
+<h2 id="ac-t" class="h2">가속기 <span class="tag">AI-03</span><span class="tag">AI-07</span></h2>
+<sc-for list="{{acc}}" as="a" hint-placeholder-count="5">
+<div style="margin-bottom: 12px">
+<div style="display: flex; justify-content: space-between; font-size: 12px"><span style="color: #C9D1D9">{{a.name}}</span><span class="mono" style="color: {{a.color}}">{{a.text}}</span></div>
+<div style="height: 6px; border-radius: 3px; background: #1E252F; overflow: hidden; margin-top: 4px"><div style="height: 6px; width: {{a.w}}; background: {{a.color}}"></div></div>
+</div>
+</sc-for>
+</section>
+<section class="card" aria-labelledby="q-t" style="flex: 1 1 320px">
+<h2 id="q-t" class="h2">입력 큐 · 드롭 <span class="tag">AI-04</span></h2>
+<div style="display: flex; align-items: flex-end; gap: 3px; height: 90px; border-bottom: 1px solid #2A313C">
+<sc-for list="{{queue}}" as="q" hint-placeholder-count="30"><div style="flex: 1; height: {{q.h}}; background: {{q.c}}"></div></sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px"><span class="muted">큐 길이 (최대 8)</span><span class="mono" style="color: {{qC}}">{{qNow}}</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 13px"><span class="muted">드롭 프레임 (누적)</span><span class="mono" style="color: {{dropC}}">{{drops}}</span></div>
+</section>
+</div>
+
+<section class="card" aria-labelledby="md-t">
+<h2 id="md-t" class="h2">모델 <span class="tag">AI-01</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 700px">
+<thead><tr><th>모델</th><th>버전</th><th>SHA-256</th><th>정밀도</th><th style="text-align: right">메모리</th><th>상태</th></tr></thead>
+<tbody>
+<sc-for list="{{models}}" as="m" hint-placeholder-count="4">
+<tr><td class="mono" style="font-size: 12px">{{m.name}}</td><td class="mono" style="font-size: 12px">{{m.ver}}</td><td class="mono" style="font-size: 12px; color: #9AA4B2">{{m.hash}}</td><td class="mono" style="font-size: 12px">{{m.prec}}</td><td class="mono" style="font-size: 12px; text-align: right">{{m.mem}}</td><td><span class="chip" style="color: {{m.fg}}; background: {{m.bg}}">{{m.st}}</span></td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<section class="card" aria-labelledby="cf-t" style="flex: 1 1 320px">
+<h2 id="cf-t" class="h2">confidence 분포 <span class="sub">lane_det</span><span class="tag">AI-05</span></h2>
+<div style="display: flex; align-items: flex-end; gap: 6px; height: 100px; border-bottom: 1px solid #2A313C">
+<sc-for list="{{conf}}" as="c" hint-placeholder-count="8"><div style="flex: 1; height: {{c.h}}; background: {{c.c}}; border-radius: 2px 2px 0 0"></div></sc-for>
+</div>
+<div style="display: flex; gap: 6px; margin-top: 4px"><sc-for list="{{conf}}" as="c" hint-placeholder-count="8"><span class="mono" style="flex: 1; text-align: center; font-size: 10px; color: #8B95A3">{{c.l}}</span></sc-for></div>
+<div class="muted" style="font-size: 12px; margin-top: 6px">평균 <b class="mono" style="color: #E6EAF0">{{confAvg}}</b> · 정답 데이터 없이 품질 변화를 보는 대리 지표</div>
+</section>
+<section class="card" aria-labelledby="sw-t" style="flex: 1 1 320px">
+<h2 id="sw-t" class="h2">모델 교체 이력 <span class="tag">AI-06</span></h2>
+<sc-for list="{{swaps}}" as="s" hint-placeholder-count="3">
+<div style="padding: 8px 0; border-bottom: 1px solid #1E252F"><div style="font-size: 13px">{{s.msg}}</div><div class="mono muted" style="font-size: 11px">{{s.meta}}</div></div>
+</sc-for>
+</section>
+</div>
+
+</main>
+</div>
+</div>
+</script>
+<script>
+window.__DC_PROPS = {"$preview":{"width":1440,"height":1500}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, running: true, sc: null, s0: 0 };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { if (this.state.running) this.setState({ t: this.state.t + 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, running, sc, s0 } = this.state;
+    const el = sc ? t - s0 : -1;
+    const T = { ok: ['#3FB950', 'rgba(63,185,80,0.14)'], warn: ['#E3A008', 'rgba(227,160,8,0.14)'], crit: ['#F85149', 'rgba(248,81,73,0.14)'], info: ['#4C9AFF', 'rgba(76,154,255,0.14)'], off: ['#9AA4B2', 'rgba(154,164,178,0.10)'] };
+    const tn = (k) => T[k] || T.off;
+    const PH = { MVP: '#4C9AFF', '2단계': '#3FB9A8', '3단계': '#9AA4B2' };
+    const mkSteps = (L) => L.map((s, i) => { const n = L[i + 1]; const st = el < s.at ? 'p' : (n && el >= n.at ? 'd' : 'a'); const c = { d: ['#3FB950', '#C9D1D9', '완료'], a: ['#4C9AFF', '#E6EAF0', '진행 중'], p: ['#3A424E', '#8B95A3', '대기'] }[st]; return { at: '+' + s.at + 's', text: s.text, dot: c[0], fg: c[1], tag: c[2] }; });
+    const clock = (sec) => { const b = 17 * 3600 + 30 * 60 + sec; return [Math.floor(b / 3600), Math.floor(b / 60) % 60, b % 60].map(x => String(x).padStart(2, '0')).join(':'); };
+    const SC = {
+      thermal: { label: 'NPU 열 스로틀링', steps: [
+        { at: 0, text: 'NPU 온도 상승 시작 (71°C → 92°C)' },
+        { at: 2, text: '열 스로틀링: 클럭 1.2GHz → 0.8GHz' },
+        { at: 3, text: '추론 p99 22ms → 48ms, 입력 큐 증가' },
+        { at: 5, text: '프레임 드롭 발생 (15 → 11 FPS)' },
+        { at: 8, text: '냉각 후 클럭 복구, 정상화' }
+      ]},
+      swap: { label: '모델 핫스왑', steps: [
+        { at: 0, text: 'lane_det v2.4 수신 · 해시·서명 검증' },
+        { at: 1, text: '섀도 모드 로드 (NPU 메모리 +600MB)' },
+        { at: 3, text: '섀도 비교: 평균 confidence 0.82 → 0.86' },
+        { at: 4, text: '활성 모델 전환 v2.3 → v2.4 (중단 없음)' },
+        { at: 6, text: '롤백 기준 감시 중: 지연·오류율 정상' }
+      ]}
+    };
+    const phase = (e) => {
+      if (sc === 'thermal' && e >= 0) {
+        if (e < 2) return { temp: 71 + e * 9, clk: 1.2, lat: 23, q: 1.5, fps: 15 };
+        if (e < 3) return { temp: 90, clk: 0.8, lat: 34, q: 3, fps: 14.5 };
+        if (e < 5) return { temp: 92, clk: 0.8, lat: 48, q: 6, fps: 13 };
+        if (e < 8) return { temp: 92 - (e - 5) * 4, clk: 0.8, lat: 52, q: 8, fps: 11 };
+        return { temp: 74, clk: 1.2, lat: 22, q: 1.5, fps: 15 };
+      }
+      return { temp: 71, clk: 1.2, lat: 22, q: 1.5, fps: 15 };
+    };
+    const lat = [], queue = [];
+    for (let k = t - 29; k <= t; k++) {
+      const p = phase(sc ? k - s0 : -1);
+      const v = Math.max(5, p.lat + 3 * Math.sin(k * 1.4) + 1.5 * Math.sin(k * 2.9));
+      lat.push({ h: Math.min(100, v / 80 * 100) + '%', c: v > 50 ? '#F85149' : (v > 35 ? '#E3A008' : '#4C9AFF') });
+      const qv = Math.max(0, p.q + 0.8 * Math.sin(k * 1.7));
+      queue.push({ h: Math.min(100, qv / 8 * 100) + '%', c: qv >= 7 ? '#F85149' : (qv >= 4 ? '#E3A008' : '#3FB9A8') });
+    }
+    const p = phase(el);
+    const latNow = p.lat + 3 * Math.sin(t * 1.4);
+    const qNow = Math.max(0, p.q + 0.8 * Math.sin(t * 1.7));
+    const drops = sc === 'thermal' && el >= 5 ? (Math.min(el, 8) - 4) * 4 : 0;
+    const shadow = sc === 'swap' && el >= 1 && el < 4;
+    const swapped = sc === 'swap' && el >= 4;
+    const npuMem = 2100 + (shadow ? 600 : 0);
+
+    const kpis = [
+      { label: '추론 FPS', v: p.fps.toFixed(1), sub: '목표 15', c: p.fps < 14 ? '#F85149' : '#E6EAF0' },
+      { label: '지연 p99', v: latNow.toFixed(0) + 'ms', sub: '예산 50ms', c: latNow > 50 ? '#F85149' : (latNow > 35 ? '#E3A008' : '#E6EAF0') },
+      { label: 'NPU 사용률', v: Math.round(Math.min(99, 62 + (p.clk < 1 ? 30 : 0) + 4 * Math.sin(t))) + '%', sub: 'Hexagon NPU', c: '#E6EAF0' },
+      { label: 'NPU 온도', v: Math.round(p.temp) + '°C', sub: '스로틀 기준 88°C', c: p.temp >= 88 ? '#F85149' : '#E6EAF0' },
+      { label: '활성 모델', v: swapped ? 'v2.4' : 'v2.3', sub: 'lane_det', c: swapped ? '#3FB950' : '#E6EAF0' }
+    ];
+    const acc = [
+      { name: 'NPU 사용률', v: Math.min(99, 62 + (p.clk < 1 ? 30 : 0) + 4 * Math.sin(t)), max: 100, unit: '%' },
+      { name: 'NPU 메모리', v: npuMem, max: 4096, unit: 'MB' },
+      { name: 'GPU 사용률', v: 34 + 5 * Math.sin(t * 0.7), max: 100, unit: '%' },
+      { name: 'NPU 클럭', v: p.clk * 1000, max: 1200, unit: 'MHz' },
+      { name: 'NPU 온도', v: p.temp, max: 100, unit: '°C' }
+    ].map(a => { const pc = a.v / a.max * 100; const bad = a.name === 'NPU 클럭' ? pc < 90 : pc >= 88; return { name: a.name, text: Math.round(a.v) + (a.unit === '%' || a.unit === '°C' ? a.unit : ' / ' + a.max + ' ' + a.unit), w: pc + '%', color: bad ? '#E3A008' : '#4C9AFF' }; });
+
+    const models = [
+      { name: 'lane_det', ver: swapped ? 'v2.4' : 'v2.3', hash: swapped ? '9f2c…a71e' : '4b8d…03c2', prec: 'INT8', mem: '410 MB', st: '활성', k: 'ok' },
+      { name: 'obj_det_yolo', ver: 'v5.1', hash: 'c11e…77fa', prec: 'INT8', mem: '920 MB', st: '활성', k: 'ok' },
+      { name: 'freespace_seg', ver: 'v1.8', hash: '02aa…e9b0', prec: 'FP16', mem: '770 MB', st: '활성', k: 'ok' }
+    ];
+    if (shadow) models.push({ name: 'lane_det', ver: 'v2.4', hash: '9f2c…a71e', prec: 'INT8', mem: '600 MB', st: '섀도 비교 중', k: 'info' });
+    if (sc === 'swap' && el === 0) models.push({ name: 'lane_det', ver: 'v2.4', hash: '9f2c…a71e', prec: 'INT8', mem: '—', st: '검증 중', k: 'warn' });
+    const modelsOut = models.map(m => ({ ...m, fg: tn(m.k)[0], bg: tn(m.k)[1] }));
+
+    const shift = sc === 'swap' && el >= 3 ? 1 : 0;
+    const C = shift ? [1, 1, 2, 4, 8, 16, 34, 34] : [1, 2, 3, 6, 12, 22, 32, 22];
+    const conf = C.map((v, i) => ({ l: (0.3 + i * 0.1).toFixed(1), h: (v + Math.sin(t + i)) / 36 * 100 + '%', c: '#3FB9A8' }));
+
+    const swaps = [];
+    if (swapped) swaps.push({ msg: 'lane_det v2.3 → v2.4 핫스왑', meta: clock(s0 + 4) + ' · 섀도 비교 3초 · 롤백 대기 10분' });
+    swaps.push({ msg: 'obj_det_yolo v5.0 → v5.1', meta: '11-07 09:12 · OTA · 롤백 없음' });
+    swaps.push({ msg: 'lane_det v2.2 → v2.3 (롤백 1회 후 재적용)', meta: '10-28 14:40 · p99 초과로 롤백' });
+
+    const spec = [
+      ['AI-01', '모델 목록·버전', '버전, 해시, 정밀도, 메모리, 활성/섀도 상태', 'MVP'],
+      ['AI-02', '추론 지연·FPS', 'p50/p99 지연과 FPS, 예산 초과 표시', 'MVP'],
+      ['AI-03', '가속기 사용률', 'NPU·GPU 사용률, 메모리, 클럭', 'MVP'],
+      ['AI-04', '입력 큐·드롭', '큐 길이, 드롭 프레임 수, 백프레셔 경고', '2단계'],
+      ['AI-05', '품질 대리 지표', 'confidence 분포 변화로 성능 저하 조기 감지', '3단계'],
+      ['AI-06', '모델 교체·롤백', '섀도 비교, 핫스왑 이력, 롤백 기준', '3단계'],
+      ['AI-07', '열 스로틀링 영향', '온도·클럭 변화와 지연 상관관계', '2단계']
+    ].map(s => ({ id: s[0], name: s[1], desc: s[2], ph: s[3], pc: PH[s[3]] }));
+    const scenarios = Object.keys(SC).map(k => ({ label: SC[k].label, run: () => this.setState({ sc: k, s0: this.state.t, running: true }), bg: sc === k ? '#4C9AFF' : '#0E1116', fg: sc === k ? '#0E1116' : '#E6EAF0' }));
+    return {
+      t, runLabel: running ? '일시정지' : '재생', toggle: () => this.setState({ running: !this.state.running }),
+      reset: () => this.setState({ t: 0, sc: null, s0: 0, running: true }),
+      scenarios, noSc: !sc, hasSc: !!sc, scTitle: sc ? SC[sc].label : '', steps: sc ? mkSteps(SC[sc].steps) : [],
+      spec, specCount: spec.length, kpis, lat, acc, queue, qNow: qNow.toFixed(1), qC: qNow >= 7 ? '#F85149' : (qNow >= 4 ? '#E3A008' : '#E6EAF0'),
+      drops: String(drops), dropC: drops > 0 ? '#F85149' : '#E6EAF0', models: modelsOut, conf, confAvg: shift ? '0.86' : '0.82', swaps
+    };
+  }
+}
+window.__DC_Component = Component;
+</script>
+</body>
+</html>

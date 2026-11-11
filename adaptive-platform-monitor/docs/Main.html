@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adaptive Platform Monitor 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+</style>
+<script src="./runtime.js"></script>
+</head>
+<body>
+<script type="text/x-dc-template" id="dc-template">
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<div style="display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 8px; background: {{accent}}; color: #0E1116; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 13px">AP</div>
+<div>
+<div style="font-weight: 700; font-size: 16px">Adaptive Platform Monitor</div>
+<div style="font-size: 12px; color: #9AA4B2">미들웨어 · 앱 실시간 모니터링</div>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; flex: 1 1 360px">
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9AA4B2">타깃 ECU
+<select style="background: #0E1116; color: #E6EAF0; border: 1px solid #2A313C; border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 13px; min-height: 36px">
+<option>ADCU-01 · Linux · Qualcomm</option>
+<option>ADCU-02 · QNX · NXP</option>
+<option>HPC-Bench · Linux · TI</option>
+</select>
+</label>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9AA4B2">기간
+<select style="background: #0E1116; color: #E6EAF0; border: 1px solid #2A313C; border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 13px; min-height: 36px">
+<option>실시간 (Live)</option>
+<option>최근 15분</option>
+<option>최근 1시간</option>
+<option>녹화 세션 재생</option>
+</select>
+</label>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #C9D1D9"><span style="width: 8px; height: 8px; border-radius: 50%; background: #3FB950"></span>Agent 연결됨 · 지연 42ms</span>
+<span style="font-size: 11px; color: #E3A008; border: 1px solid #5C4A12; border-radius: 4px; padding: 2px 6px">샘플 데이터</span>
+<button type="button" style="min-height: 40px; padding: 0 14px; border-radius: 6px; border: 1px solid #2A313C; background: #0E1116; color: #E6EAF0; font: inherit; font-size: 13px; cursor: pointer">● 녹화 시작</button>
+<button type="button" aria-label="알람 4건" style="min-height: 40px; padding: 0 14px; border-radius: 6px; border: 1px solid #6B2A27; background: rgba(248,81,73,0.14); color: #F85149; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer">알람 4</button>
+</div>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start">
+
+<nav aria-label="주 메뉴" style="flex: 1 1 220px; max-width: 100%; box-sizing: border-box; padding: 16px 12px; background: #11161D; border-right: 1px solid #2A313C; display: flex; flex-direction: column; gap: 14px">
+<sc-for list="{{navGroups}}" as="g" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 11px; letter-spacing: 0.06em; color: #8B95A3; padding: 0 8px 4px">{{g.title}}</div>
+<sc-for list="{{g.items}}" as="n" hint-placeholder-count="4">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 8px; border-radius: 6px; text-decoration: none; color: {{n.fg}}; background: {{n.bg}}">
+<span style="width: 34px; height: 22px; border-radius: 4px; background: #1E252F; color: #C9D1D9; font-family: 'JetBrains Mono', monospace; font-size: 10px; display: flex; align-items: center; justify-content: center">{{n.code}}</span>
+<span style="flex: 1; font-size: 13px">{{n.label}}</span>
+<sc-if value="{{n.hasBadge}}" hint-placeholder-val="{{false}}"><span style="font-size: 11px; font-weight: 500; color: {{n.badgeFg}}; background: {{n.badgeBg}}; border-radius: 10px; padding: 0 7px">{{n.badge}}</span></sc-if>
+</a>
+</sc-for>
+</div>
+</sc-for>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px">
+<div>
+<h1 style="margin: 0; font-size: 22px; font-weight: 700">시스템 개요</h1>
+<div style="font-size: 13px; color: #9AA4B2">ADCU-01 · Machine Manifest v1.4.2 · 가동 3시간 12분 · 마지막 갱신 17:29:42</div>
+</div>
+<a href="COM.html" style="font-size: 13px">서비스 토폴로지 전체 보기 →</a>
+</div>
+
+<section aria-label="핵심 지표" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="6">
+<div style="background: #161B22; border: 1px solid #2A313C; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9AA4B2"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{k.fg}}"></span>{{k.label}}</div>
+<div style="font-size: 24px; font-weight: 700; color: {{k.valueColor}}">{{k.value}}</div>
+<div style="font-size: 12px; color: #9AA4B2">{{k.sub}}</div>
+</div>
+</sc-for>
+</section>
+
+<section aria-labelledby="fg-title" style="background: #161B22; border: 1px solid #2A313C; border-radius: 10px; padding: 16px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 12px">
+<h2 id="fg-title" style="margin: 0; font-size: 15px; font-weight: 700">Function Group 상태 <span style="font-weight: 400; color: #9AA4B2; font-size: 12px">(SM)</span></h2>
+<span style="font-size: 12px; color: #9AA4B2">Machine State: <b style="color: #3FB950">Running</b> · 전이 이력 12건</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{fgs}}" as="f" hint-placeholder-count="8">
+<div style="flex: 1 1 130px; border-radius: 8px; padding: 10px 12px; background: {{f.bg}}; border: 1px solid #2A313C">
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #C9D1D9">{{f.name}}</div>
+<div style="font-weight: 700; color: {{f.fg}}">{{f.state}}</div>
+<div style="font-size: 11px; color: #9AA4B2">{{f.procs}}</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+<section aria-labelledby="svc-title" style="flex: 3 1 520px; min-width: 0; background: #161B22; border: 1px solid #2A313C; border-radius: 10px; padding: 16px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 10px">
+<h2 id="svc-title" style="margin: 0; font-size: 15px; font-weight: 700">서비스 인스턴스 <span style="font-weight: 400; color: #9AA4B2; font-size: 12px">(ara::com · SOME/IP-SD)</span></h2>
+<span style="font-size: 12px; color: #9AA4B2">Offered 61 / Required 64</span>
+</div>
+<div style="overflow-x: auto">
+<table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+<thead>
+<tr style="text-align: left; color: #9AA4B2; font-size: 12px">
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500">인터페이스 · ID</th>
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500">Provider → Consumer</th>
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500">바인딩</th>
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500">상태</th>
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500; text-align: right">주기</th>
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500; text-align: right">지연 p99</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{services}}" as="s" hint-placeholder-count="5">
+<tr>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F"><div style="font-weight: 500">{{s.name}}</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9AA4B2">{{s.id}}</div></td>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{s.flow}}</td>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F; font-size: 12px; color: #C9D1D9">{{s.binding}}</td>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F"><span style="font-size: 12px; font-weight: 500; color: {{s.fg}}; background: {{s.bg}}; border-radius: 4px; padding: 2px 8px; white-space: nowrap">{{s.state}}</span></td>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{s.rate}}</td>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{s.latColor}}">{{s.lat}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<section aria-labelledby="alarm-title" style="flex: 2 1 340px; min-width: 0; background: #161B22; border: 1px solid #2A313C; border-radius: 10px; padding: 16px">
+<div style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 10px">
+<h2 id="alarm-title" style="margin: 0; font-size: 15px; font-weight: 700">알람 · 이벤트</h2>
+<a href="ALM.html" style="font-size: 12px">전체 →</a>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{events}}" as="e" hint-placeholder-count="6">
+<div style="display: flex; gap: 10px; padding: 8px 10px; border-radius: 8px; background: #0E1116; border: 1px solid #1E252F">
+<span style="flex: none; align-self: flex-start; font-size: 10px; font-weight: 700; color: {{e.fg}}; background: {{e.bg}}; border-radius: 4px; padding: 2px 6px; margin-top: 2px">{{e.sev}}</span>
+<div style="min-width: 0">
+<div style="font-size: 13px">{{e.msg}}</div>
+<div style="font-size: 11px; color: #9AA4B2; font-family: 'JetBrains Mono', monospace">{{e.time}} · {{e.src}}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</section>
+</div>
+
+<section aria-labelledby="proc-title" style="background: #161B22; border: 1px solid #2A313C; border-radius: 10px; padding: 16px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 10px">
+<h2 id="proc-title" style="margin: 0; font-size: 15px; font-weight: 700">프로세스 · 앱 <span style="font-weight: 400; color: #9AA4B2; font-size: 12px">(EM · PHM 감시)</span></h2>
+<span style="font-size: 12px; color: #9AA4B2">42 실행 · 1 기동 중 · 재시작 누적 3</span>
+</div>
+<div style="overflow-x: auto">
+<table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px">
+<thead>
+<tr style="text-align: left; color: #9AA4B2; font-size: 12px">
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500">프로세스</th>
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500">Function Group</th>
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500">실행 상태</th>
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500; text-align: right">PID</th>
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500; text-align: right">CPU</th>
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500; text-align: right">메모리</th>
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500; text-align: right">재시작</th>
+<th style="padding: 8px; border-bottom: 1px solid #2A313C; font-weight: 500">PHM 감시</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{procs}}" as="p" hint-placeholder-count="8">
+<tr>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{p.name}}</td>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F; font-size: 12px; color: #C9D1D9">{{p.fg}}</td>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F"><span style="font-size: 12px; font-weight: 500; color: {{p.sfg}}; background: {{p.sbg}}; border-radius: 4px; padding: 2px 8px">{{p.state}}</span></td>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #9AA4B2">{{p.pid}}</td>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F; text-align: right">
+<div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px">
+<div style="width: 60px; height: 6px; border-radius: 3px; background: #1E252F; overflow: hidden"><div style="height: 6px; width: {{p.cpuW}}; background: {{p.cpuColor}}"></div></div>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; width: 44px; text-align: right">{{p.cpu}}</span>
+</div>
+</td>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{p.mem}}</td>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{p.rColor}}">{{p.restarts}}</td>
+<td style="padding: 8px; border-bottom: 1px solid #1E252F; font-size: 12px; color: {{p.hfg}}">{{p.phm}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+<section aria-labelledby="res-title" style="flex: 1 1 320px; min-width: 0; background: #161B22; border: 1px solid #2A313C; border-radius: 10px; padding: 16px">
+<h2 id="res-title" style="margin: 0 0 12px; font-size: 15px; font-weight: 700">리소스 <span style="font-weight: 400; color: #9AA4B2; font-size: 12px">(/proc · cgroup)</span></h2>
+<div style="font-size: 12px; color: #9AA4B2; margin-bottom: 6px">코어별 CPU 사용률</div>
+<div style="display: flex; align-items: flex-end; gap: 6px; height: 90px; padding-bottom: 4px; border-bottom: 1px solid #2A313C">
+<sc-for list="{{cores}}" as="c" hint-placeholder-count="8">
+<div style="flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px">
+<span style="font-size: 10px; color: #9AA4B2; font-family: 'JetBrains Mono', monospace">{{c.v}}</span>
+<div style="width: 100%; height: {{c.h}}; background: {{c.color}}; border-radius: 3px 3px 0 0"></div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 6px; margin-bottom: 14px">
+<sc-for list="{{cores}}" as="c" hint-placeholder-count="8"><span style="flex: 1; text-align: center; font-size: 10px; color: #8B95A3; font-family: 'JetBrains Mono', monospace">{{c.name}}</span></sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{meters}}" as="m" hint-placeholder-count="4">
+<div>
+<div style="display: flex; justify-content: space-between; font-size: 12px"><span style="color: #C9D1D9">{{m.label}}</span><span style="font-family: 'JetBrains Mono', monospace; color: {{m.color}}">{{m.text}}</span></div>
+<div style="height: 6px; border-radius: 3px; background: #1E252F; overflow: hidden; margin-top: 4px"><div style="height: 6px; width: {{m.w}}; background: {{m.color}}"></div></div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="safe-title" style="flex: 1 1 280px; min-width: 0; background: #161B22; border: 1px solid #2A313C; border-radius: 10px; padding: 16px">
+<h2 id="safe-title" style="margin: 0 0 12px; font-size: 15px; font-weight: 700">Safety · Security</h2>
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{safety}}" as="x" hint-placeholder-count="6">
+<div style="display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid #1E252F">
+<span style="font-size: 13px; color: #C9D1D9">{{x.label}}</span>
+<span style="font-size: 13px; font-weight: 500; color: {{x.fg}}; text-align: right">{{x.value}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="mf-title" style="flex: 1 1 280px; min-width: 0; background: #161B22; border: 1px solid #2A313C; border-radius: 10px; padding: 16px">
+<h2 id="mf-title" style="margin: 0 0 12px; font-size: 15px; font-weight: 700">Manifest · 배포 구성</h2>
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{manifest}}" as="x" hint-placeholder-count="5">
+<div style="display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid #1E252F">
+<span style="font-size: 13px; color: #C9D1D9">{{x.label}}</span>
+<span style="font-size: 13px; font-weight: 500; color: {{x.fg}}; text-align: right; font-family: 'JetBrains Mono', monospace">{{x.value}}</span>
+</div>
+</sc-for>
+</div>
+<div style="margin-top: 12px; padding: 10px; border-radius: 8px; background: rgba(227,160,8,0.12); border: 1px solid #5C4A12; font-size: 12px; color: #E3C46A">ai_infer_svc Execution Manifest가 저장소와 다릅니다 (미배포 변경 1건). <a href="#">Diff 보기</a></div>
+</section>
+</div>
+
+<section aria-labelledby="log-title" style="background: #161B22; border: 1px solid #2A313C; border-radius: 10px; padding: 16px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px">
+<h2 id="log-title" style="margin: 0; font-size: 15px; font-weight: 700">실시간 로그 <span style="font-weight: 400; color: #9AA4B2; font-size: 12px">(DLT · ara::log)</span></h2>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+<sc-for list="{{levels}}" as="l" hint-placeholder-count="4">
+<button type="button" aria-pressed="{{l.pressed}}" onClick="{{l.pick}}" style="min-height: 36px; padding: 0 12px; border-radius: 6px; border: 1px solid #2A313C; background: {{l.bg}}; color: {{l.fg}}; font: inherit; font-size: 12px; cursor: pointer">{{l.label}}</button>
+</sc-for>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9AA4B2">검색
+<input type="text" placeholder="App ID / Context / 메시지" style="background: #0E1116; color: #E6EAF0; border: 1px solid #2A313C; border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 12px; min-height: 36px; width: 190px">
+</label>
+</div>
+</div>
+<div style="overflow-x: auto; background: #0B0E12; border: 1px solid #1E252F; border-radius: 8px">
+<div style="min-width: 680px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+<sc-for list="{{logs}}" as="g" hint-placeholder-count="7">
+<div style="display: flex; gap: 14px; padding: 6px 12px; border-bottom: 1px solid #161B22">
+<span style="color: #8B95A3; width: 96px; flex: none">{{g.time}}</span>
+<span style="color: #C9D1D9; width: 48px; flex: none">{{g.app}}</span>
+<span style="color: #9AA4B2; width: 48px; flex: none">{{g.ctx}}</span>
+<span style="color: {{g.fg}}; width: 48px; flex: none; font-weight: 500">{{g.lvl}}</span>
+<span style="color: #E6EAF0; flex: 1">{{g.msg}}</span>
+</div>
+</sc-for>
+<sc-if value="{{noLogs}}" hint-placeholder-val="{{false}}"><div style="padding: 16px 12px; color: #9AA4B2">해당 레벨의 로그가 없습니다.</div></sc-if>
+</div>
+</div>
+</section>
+
+<footer style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px; color: #8B95A3">
+<span>수집 Agent v0.3 · 샘플링 1s · 보존 7일</span>
+<span>Linux 6.6 · aarch64 · 8 cores · 16GB</span>
+</footer>
+
+</main>
+</div>
+</div>
+</script>
+<script>
+window.__DC_PROPS = {"accent":{"editor":"color","default":"#4C9AFF","options":["#4C9AFF","#3FB9A8","#B48CFF","#E3A008"]},"$preview":{"width":1440,"height":2050}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { level: 'ALL' };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#4C9AFF';
+    const T = {
+      ok: { fg: '#3FB950', bg: 'rgba(63,185,80,0.14)' },
+      warn: { fg: '#E3A008', bg: 'rgba(227,160,8,0.14)' },
+      crit: { fg: '#F85149', bg: 'rgba(248,81,73,0.14)' },
+      off: { fg: '#9AA4B2', bg: 'rgba(154,164,178,0.10)' },
+      info: { fg: '#4C9AFF', bg: 'rgba(76,154,255,0.14)' }
+    };
+    const tone = (t) => T[t] || T.off;
+
+    const nav = [
+      { title: '개요', items: [
+        { code: 'DASH', label: '대시보드', active: true },
+        { code: 'TOPO', label: '서비스 토폴로지' },
+        { code: 'ALM', label: '알람 · 이벤트', badge: '4', t: 'crit' }
+      ]},
+      { title: '플랫폼 서비스', items: [
+        { code: 'EM', label: '실행 관리', badge: '1', t: 'crit' },
+        { code: 'SM', label: '상태 관리' },
+        { code: 'COM', label: '통신 · SOME/IP', badge: '3', t: 'warn' },
+        { code: 'LOG', label: '로그 · 트레이스' },
+        { code: 'PER', label: '영속성', badge: '1', t: 'warn' },
+        { code: 'PHM', label: 'Safety · 헬스' },
+        { code: 'IAM', label: 'Security' },
+        { code: 'AI', label: 'AI 공통 서비스' }
+      ]},
+      { title: '시스템', items: [
+        { code: 'RES', label: '리소스' },
+        { code: 'MF', label: 'Manifest · 구성' },
+        { code: 'REC', label: '녹화 · 재생' },
+        { code: 'SET', label: '설정' }
+      ]}
+    ];
+    const navGroups = nav.map(g => ({
+      title: g.title,
+      items: g.items.map(n => ({
+        ...n,
+        href: n.active ? '#' : ({ TOPO: 'COM', IAM: 'SEC', SET: '' }[n.code] ?? n.code) ? (({ TOPO: 'COM', IAM: 'SEC', SET: '' }[n.code] ?? n.code) + '.html') : '#',
+        fg: n.active ? '#E6EAF0' : '#C9D1D9',
+        bg: n.active ? 'rgba(76,154,255,0.16)' : 'transparent',
+        hasBadge: !!n.badge,
+        badgeFg: tone(n.t).fg,
+        badgeBg: tone(n.t).bg
+      }))
+    }));
+
+    const kpis = [
+      { label: 'Machine State', value: 'Running', sub: 'Startup → Running 3h 12m 전', t: 'ok' },
+      { label: 'Function Group', value: '7 / 8', sub: 'AI_Inference 재시작 중', t: 'warn' },
+      { label: '프로세스', value: '42', sub: '기동 중 1 · 재시작 3회', t: 'warn' },
+      { label: '서비스 인스턴스', value: '61 / 64', sub: '미제공 3 (FindService 대기)', t: 'warn' },
+      { label: '알람', value: '1 · 3', sub: 'Critical 1 · Warning 3', t: 'crit' },
+      { label: 'CPU · 메모리', value: '38% · 5.4GB', sub: 'SoC 온도 71°C', t: 'ok' }
+    ].map(k => ({ ...k, fg: tone(k.t).fg, valueColor: k.t === 'crit' ? '#F85149' : '#E6EAF0' }));
+
+    const fgs = [
+      { name: 'MachineFG', state: 'Running', procs: '6 프로세스', t: 'ok' },
+      { name: 'Perception', state: 'On', procs: '5 프로세스', t: 'ok' },
+      { name: 'Planning', state: 'On', procs: '4 프로세스', t: 'ok' },
+      { name: 'Control', state: 'On', procs: '3 프로세스', t: 'ok' },
+      { name: 'Safety', state: 'On', procs: '4 프로세스', t: 'ok' },
+      { name: 'Diagnostics', state: 'On', procs: '3 프로세스', t: 'ok' },
+      { name: 'AI_Inference', state: 'Restarting', procs: '2 프로세스', t: 'crit' },
+      { name: 'OTA', state: 'Off', procs: '0 프로세스', t: 'off' }
+    ].map(f => ({ ...f, fg: tone(f.t).fg, bg: f.t === 'crit' ? 'rgba(248,81,73,0.10)' : '#0E1116' }));
+
+    const services = [
+      { name: 'ObjectList', id: '0x1001 : 1', flow: 'perception_app → planning_app, safety_mon', binding: 'SOME/IP', state: 'Offered', rate: '30 Hz', lat: '4.2 ms', t: 'ok' },
+      { name: 'Trajectory', id: '0x1101 : 1', flow: 'planning_app → control_app', binding: 'IPC (shm)', state: 'Offered', rate: '50 Hz', lat: '1.1 ms', t: 'ok' },
+      { name: 'VehicleState', id: '0x2001 : 1', flow: 'control_app → planning_app, hmi_bridge', binding: 'SOME/IP', state: 'Offered', rate: '100 Hz', lat: '0.8 ms', t: 'ok' },
+      { name: 'PlanningStatus', id: '0x1102 : 1', flow: 'planning_app → safety_mon', binding: 'IPC (shm)', state: '지연 경고', rate: '20 Hz', lat: '26.0 ms', t: 'warn' },
+      { name: 'InferenceResult', id: '0x3001 : 1', flow: 'ai_infer_svc → perception_app', binding: 'DDS', state: '미제공', rate: '—', lat: '—', t: 'crit' }
+    ].map(s => ({ ...s, fg: tone(s.t).fg, bg: tone(s.t).bg, latColor: s.t === 'warn' ? '#E3A008' : '#E6EAF0' }));
+
+    const events = [
+      { sev: 'CRIT', time: '17:29:41', src: 'EM · PHM', msg: 'ai_infer_svc Alive 감시 실패 → 3회 재시작', t: 'crit' },
+      { sev: 'WARN', time: '17:29:40', src: 'COM', msg: 'InferenceResult 미제공 — perception_app 대기 중', t: 'warn' },
+      { sev: 'WARN', time: '17:27:12', src: 'PHM', msg: 'planning_app Deadline 초과 (예산 20ms, 실측 26ms)', t: 'warn' },
+      { sev: 'INFO', time: '17:20:03', src: 'SM', msg: 'FG AI_Inference: On → Restarting', t: 'info' },
+      { sev: 'WARN', time: '17:05:55', src: 'PER', msg: '/var/persist 사용량 85% 초과', t: 'warn' },
+      { sev: 'INFO', time: '14:18:30', src: 'SM', msg: 'Machine State: Startup → Running', t: 'info' }
+    ].map(e => ({ ...e, fg: tone(e.t).fg, bg: tone(e.t).bg }));
+
+    const P = [
+      { name: 'em_daemon', fg: 'MachineFG', state: 'Running', pid: '412', cpu: 1.2, mem: '18 MB', restarts: 0, phm: '정상', st: 'ok', ht: 'ok' },
+      { name: 'sm_daemon', fg: 'MachineFG', state: 'Running', pid: '418', cpu: 0.4, mem: '9 MB', restarts: 0, phm: '정상', st: 'ok', ht: 'ok' },
+      { name: 'com_gateway', fg: 'MachineFG', state: 'Running', pid: '430', cpu: 3.8, mem: '22 MB', restarts: 0, phm: '정상', st: 'ok', ht: 'ok' },
+      { name: 'perception_app', fg: 'Perception', state: 'Running', pid: '1022', cpu: 41.0, mem: '820 MB', restarts: 0, phm: '정상', st: 'ok', ht: 'ok' },
+      { name: 'planning_app', fg: 'Planning', state: 'Running', pid: '1104', cpu: 22.5, mem: '310 MB', restarts: 0, phm: 'Deadline 경고', st: 'ok', ht: 'warn' },
+      { name: 'control_app', fg: 'Control', state: 'Running', pid: '1180', cpu: 8.1, mem: '64 MB', restarts: 0, phm: '정상', st: 'ok', ht: 'ok' },
+      { name: 'safety_mon', fg: 'Safety', state: 'Running', pid: '1210', cpu: 2.3, mem: '31 MB', restarts: 0, phm: '정상', st: 'ok', ht: 'ok' },
+      { name: 'ai_infer_svc', fg: 'AI_Inference', state: 'Starting', pid: '2210', cpu: 0, mem: '1.1 GB', restarts: 3, phm: 'Alive 실패', st: 'warn', ht: 'crit' }
+    ];
+    const procs = P.map(p => ({
+      ...p,
+      cpu: p.cpu ? p.cpu.toFixed(1) + '%' : '—',
+      cpuW: Math.min(100, p.cpu) + '%',
+      cpuColor: p.cpu >= 40 ? '#E3A008' : accent,
+      sfg: tone(p.st).fg, sbg: tone(p.st).bg,
+      hfg: tone(p.ht).fg,
+      rColor: p.restarts > 0 ? '#F85149' : '#9AA4B2'
+    }));
+
+    const coreVals = [62, 48, 35, 71, 22, 18, 40, 9];
+    const cores = coreVals.map((v, i) => ({
+      name: 'C' + i, v: v + '%', h: Math.max(4, v) + '%',
+      color: v >= 70 ? '#E3A008' : accent
+    }));
+
+    const meters = [
+      { label: '메모리', text: '5.4 / 16 GB', pct: 34, t: 'ok' },
+      { label: '/var/persist (PER)', text: '85%', pct: 85, t: 'warn' },
+      { label: 'SOME/IP 트래픽 (eth0)', text: '38 Mbps', pct: 38, t: 'ok' },
+      { label: 'SoC 온도', text: '71°C', pct: 71, t: 'ok' }
+    ].map(m => ({ ...m, w: m.pct + '%', color: m.t === 'ok' ? accent : tone(m.t).fg }));
+
+    const safety = [
+      { label: 'PHM 감시 대상 (SE)', value: '24 · 실패 1', t: 'crit' },
+      { label: 'Watchdog', value: '정상', t: 'ok' },
+      { label: 'IAM 접근 거부 (24h)', value: '2건', t: 'warn' },
+      { label: 'SecOC MAC 검증 실패', value: '0건', t: 'ok' },
+      { label: 'Secure Boot 검증', value: '통과', t: 'ok' },
+      { label: '인증서 만료', value: 'D-38', t: 'warn' }
+    ].map(x => ({ ...x, fg: tone(x.t).fg }));
+
+    const manifest = [
+      { label: 'Machine Manifest', value: 'v1.4.2', t: 'off' },
+      { label: 'Execution Manifest', value: '18개', t: 'off' },
+      { label: 'Service Instance Manifest', value: '12개', t: 'off' },
+      { label: 'OS / 칩 프로파일', value: 'Linux · QCOM', t: 'off' },
+      { label: '저장소 대비 변경', value: '1건', t: 'warn' }
+    ].map(x => ({ ...x, fg: x.t === 'warn' ? '#E3A008' : '#E6EAF0' }));
+
+    const L = [
+      { time: '17:29:42.118', app: 'PERC', ctx: 'COM', lvl: 'WARN', msg: 'FindService(InferenceResult) timeout 500ms, retry 4' },
+      { time: '17:29:41.902', app: 'EM', ctx: 'PROC', lvl: 'ERROR', msg: 'ai_infer_svc exited (code 134), restart attempt 3/3' },
+      { time: '17:29:41.880', app: 'PHM', ctx: 'SUPV', lvl: 'ERROR', msg: 'SE ai_infer_svc: alive indication missing (expected 10/s)' },
+      { time: '17:29:40.511', app: 'PLAN', ctx: 'MAIN', lvl: 'INFO', msg: 'trajectory published, 12 points, horizon 4.0s' },
+      { time: '17:29:40.204', app: 'CTRL', ctx: 'LOOP', lvl: 'INFO', msg: 'cycle 10ms, jitter 0.3ms' },
+      { time: '17:29:39.977', app: 'PLAN', ctx: 'TIME', lvl: 'WARN', msg: 'cycle overrun 26.0ms > budget 20ms' },
+      { time: '17:29:39.550', app: 'SM', ctx: 'FG', lvl: 'INFO', msg: 'FG AI_Inference transition requested: Restarting' }
+    ];
+    const lvlColor = { ERROR: '#F85149', WARN: '#E3A008', INFO: '#4C9AFF' };
+    const level = this.state.level;
+    const logs = L.filter(g => level === 'ALL' || g.lvl === level).map(g => ({ ...g, fg: lvlColor[g.lvl] }));
+    const levels = ['ALL', 'ERROR', 'WARN', 'INFO'].map(l => {
+      const on = l === level;
+      return {
+        label: l === 'ALL' ? '전체' : l,
+        pick: () => this.setState({ level: l }),
+        pressed: on ? 'true' : 'false',
+        bg: on ? accent : 'transparent',
+        fg: on ? '#0E1116' : '#C9D1D9'
+      };
+    });
+
+    return { accent, navGroups, kpis, fgs, services, events, procs, cores, meters, safety, manifest, logs, levels, noLogs: logs.length === 0 };
+  }
+}
+window.__DC_Component = Component;
+</script>
+</body>
+</html>

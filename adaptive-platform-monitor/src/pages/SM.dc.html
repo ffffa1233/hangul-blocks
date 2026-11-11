@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>SM 상태 관리</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#8AB8FF;border:1px solid #2A4A75;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.btn:disabled{color:#8B95A3;cursor:not-allowed}
+.sel{background:#0E1116;color:#E6EAF0;border:1px solid #2A313C;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;min-height:40px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<a href="Main.dc.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; background: #1E252F; color: #C9D1D9; border-radius: 4px; padding: 2px 6px">SM</span><h1 style="margin: 0; font-size: 18px">상태 관리</h1></div>
+<div class="muted" style="font-size: 12px">Machine State · Function Group 상태 · 전이 이력과 실패 원인</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span class="mono" style="font-size: 12px; color: #9AA4B2">시뮬레이션 T+{{t}}s</span>
+<button type="button" class="btn" onClick="{{toggle}}">{{runLabel}}</button>
+<sc-for list="{{scenarios}}" as="s" hint-placeholder-count="2"><button type="button" class="btn" onClick="{{s.run}}" style="background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for>
+<button type="button" class="btn" onClick="{{reset}}">초기화</button>
+</div>
+</header>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 40px">
+<aside style="flex: 1 1 300px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section class="card" aria-labelledby="sc-t">
+<h2 id="sc-t" class="h2">시나리오 진행</h2>
+<sc-if value="{{noSc}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">상단 시나리오 버튼을 누르면 단계별로 진행됩니다. 기본 상태는 주차(Parking)입니다.</div></sc-if>
+<sc-if value="{{hasSc}}" hint-placeholder-val="{{false}}">
+<div style="font-size: 13px; font-weight: 500; margin-bottom: 6px">{{scTitle}}</div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; padding: 6px 0"><span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: {{s.dot}}; margin-top: 5px"></span><div><div style="font-size: 13px; color: {{s.fg}}">{{s.text}}</div><div class="mono" style="font-size: 11px; color: #8B95A3">{{s.at}} · {{s.tag}}</div></div></div>
+</sc-for>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="spec-t">
+<h2 id="spec-t" class="h2">기능 명세 <span class="sub">{{specCount}}개</span></h2>
+<sc-for list="{{spec}}" as="f" hint-placeholder-count="8">
+<div style="padding: 9px 0; border-bottom: 1px solid #1E252F">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; color: #8AB8FF">{{f.id}}</span><span style="font-size: 13px; font-weight: 500; flex: 1">{{f.name}}</span><span style="font-size: 10px; color: {{f.pc}}; border: 1px solid {{f.pc}}; border-radius: 10px; padding: 0 6px; white-space: nowrap">{{f.ph}}</span></div>
+<div class="muted" style="font-size: 12px; margin-top: 2px">{{f.desc}}</div>
+</div>
+</sc-for>
+</section>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<section class="card" aria-labelledby="sm-t">
+<h2 id="sm-t" class="h2">상태 머신 <span class="tag">SM-01</span><span class="tag">SM-05</span></h2>
+<sc-for list="{{machines}}" as="m" hint-placeholder-count="2">
+<div style="margin-bottom: 14px">
+<div class="muted" style="font-size: 12px; margin-bottom: 6px">{{m.title}}</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<sc-for list="{{m.nodes}}" as="n" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 8px">
+<div style="min-width: 104px; text-align: center; padding: 10px 12px; border-radius: 8px; border: 2px solid {{n.border}}; background: {{n.bg}}; color: {{n.fg}}; font-weight: 500; font-size: 13px">{{n.name}}<div style="font-size: 10px; font-weight: 400; color: {{n.subFg}}">{{n.sub}}</div></div>
+<sc-if value="{{n.arrow}}" hint-placeholder-val="{{true}}"><span aria-hidden="true" style="color: #5A6472; font-size: 18px">→</span></sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</section>
+
+<section class="card" aria-labelledby="fg-t">
+<h2 id="fg-t" class="h2">Function Group 보드 <span class="tag">SM-02</span></h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px">
+<sc-for list="{{fgs}}" as="f" hint-placeholder-count="8">
+<div style="border-radius: 8px; padding: 10px 12px; background: {{f.bg}}; border: 1px solid {{f.border}}">
+<div class="mono" style="font-size: 12px; color: #C9D1D9">{{f.name}}</div>
+<div style="font-weight: 700; color: {{f.fg}}">{{f.state}}</div>
+<div class="muted" style="font-size: 11px">{{f.note}}</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section class="card" aria-labelledby="h-t">
+<h2 id="h-t" class="h2">전이 이력 <span class="tag">SM-03</span><span class="tag">SM-04</span><span class="tag">SM-06</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 720px">
+<thead><tr><th>시각</th><th>대상</th><th>전이</th><th>트리거</th><th style="text-align: right">소요</th><th>결과</th></tr></thead>
+<tbody>
+<sc-for list="{{hist}}" as="h" hint-placeholder-count="4">
+<tr><td class="mono" style="font-size: 12px; color: #9AA4B2">{{h.time}}</td><td class="mono" style="font-size: 12px">{{h.fg}}</td><td style="font-size: 12px">{{h.tr}}</td><td style="font-size: 12px; color: #C9D1D9">{{h.src}}</td><td class="mono" style="font-size: 12px; text-align: right">{{h.dur}}</td><td><span class="chip" style="color: {{h.fg2}}; background: {{h.bg2}}">{{h.res}}</span></td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<section class="card" aria-labelledby="mr-t" style="flex: 1 1 320px">
+<h2 id="mr-t" class="h2">수동 전이 요청 <span class="tag">SM-07</span></h2>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end">
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9AA4B2">Function Group<select class="sel"><option>Perception</option><option>Planning</option><option>AI_Inference</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9AA4B2">목표 상태<select class="sel"><option>On</option><option>Off</option><option>Verify</option></select></label>
+<button type="button" class="btn" disabled>요청 (테스트 모드 전용)</button>
+</div>
+<div class="muted" style="font-size: 12px; margin-top: 8px">실차 모드에서는 비활성화, 모든 요청은 감사 로그에 기록됩니다.</div>
+</section>
+<section class="card" aria-labelledby="pw-t" style="flex: 1 1 320px">
+<h2 id="pw-t" class="h2">전원 · 네트워크 모드 <span class="tag">SM-08</span></h2>
+<sc-for list="{{power}}" as="p" hint-placeholder-count="4">
+<div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1E252F; font-size: 13px"><span style="color: #C9D1D9">{{p.k}}</span><span class="mono" style="color: {{p.fg}}">{{p.v}}</span></div>
+</sc-for>
+</section>
+</div>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, running: true, sc: null, s0: 0 };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { if (this.state.running) this.setState({ t: this.state.t + 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, running, sc, s0 } = this.state;
+    const el = sc ? t - s0 : -1;
+    const T = { ok: ['#3FB950', 'rgba(63,185,80,0.14)'], warn: ['#E3A008', 'rgba(227,160,8,0.14)'], crit: ['#F85149', 'rgba(248,81,73,0.14)'], info: ['#4C9AFF', 'rgba(76,154,255,0.14)'], off: ['#9AA4B2', 'rgba(154,164,178,0.10)'] };
+    const tn = (k) => T[k] || T.off;
+    const PH = { MVP: '#4C9AFF', '2단계': '#3FB9A8', '3단계': '#9AA4B2' };
+    const pick = (tl) => { let c = tl[0]; tl.forEach(x => { if (el >= x.at) c = x; }); return c; };
+    const mkSteps = (L) => L.map((s, i) => { const n = L[i + 1]; const st = el < s.at ? 'p' : (n && el >= n.at ? 'd' : 'a'); const c = { d: ['#3FB950', '#C9D1D9', '완료'], a: ['#4C9AFF', '#E6EAF0', '진행 중'], p: ['#3A424E', '#8B95A3', '대기'] }[st]; return { at: '+' + s.at + 's', text: s.text, dot: c[0], fg: c[1], tag: c[2] }; });
+    const clock = (sec) => { const b = 17 * 3600 + 30 * 60 + sec; const h = Math.floor(b / 3600), m = Math.floor(b / 60) % 60, s = b % 60; return [h, m, s].map(x => String(x).padStart(2, '0')).join(':'); };
+
+    const SC = {
+      drive: { label: '주행 모드 진입 (성공)', steps: [
+        { at: 0, text: '기어 D 신호 수신 → VehicleMode Parking→Driving 요청' },
+        { at: 1, text: 'Perception Off→On 전이 (프로세스 5개 기동)' },
+        { at: 3, text: 'Planning · AI_Inference Off→On' },
+        { at: 4, text: 'Control Off→On' },
+        { at: 5, text: '전이 완료: 총 5.0s, 성공' }
+      ], fg: {
+        VehicleMode: [{ at: -999, s: 'Parking', k: 'off' }, { at: 0, s: '전이 중', k: 'info' }, { at: 5, s: 'Driving', k: 'ok' }],
+        Perception: [{ at: -999, s: 'Off', k: 'off' }, { at: 1, s: '전이 중', k: 'info' }, { at: 3, s: 'On', k: 'ok' }],
+        Planning: [{ at: -999, s: 'Off', k: 'off' }, { at: 3, s: '전이 중', k: 'info' }, { at: 4, s: 'On', k: 'ok' }],
+        AI_Inference: [{ at: -999, s: 'Off', k: 'off' }, { at: 3, s: '전이 중', k: 'info' }, { at: 5, s: 'On', k: 'ok' }],
+        Control: [{ at: -999, s: 'Off', k: 'off' }, { at: 4, s: '전이 중', k: 'info' }, { at: 5, s: 'On', k: 'ok' }]
+      }, hist: [
+        { at: 3, fg: 'Perception', tr: 'Off → On', src: 'SM (VehicleMode 연동)', dur: '2.0s', res: '성공', k: 'ok' },
+        { at: 4, fg: 'Planning', tr: 'Off → On', src: 'SM (VehicleMode 연동)', dur: '1.0s', res: '성공', k: 'ok' },
+        { at: 5, fg: 'Control', tr: 'Off → On', src: 'SM (VehicleMode 연동)', dur: '1.0s', res: '성공', k: 'ok' },
+        { at: 5, fg: 'VehicleMode', tr: 'Parking → Driving', src: '차량 신호 (Gear D)', dur: '5.0s', res: '성공', k: 'ok' }
+      ]},
+      fail: { label: '전이 실패 (기동 타임아웃)', steps: [
+        { at: 0, text: 'VehicleMode Parking→Driving 요청' },
+        { at: 1, text: 'Perception Off→On 시작' },
+        { at: 3, text: 'perception_app 상태 보고 미수신 (타임아웃 4s 대기)' },
+        { at: 5, text: '타임아웃 → 전이 실패, VehicleMode Parking으로 롤백' },
+        { at: 6, text: '진단 DTC 기록 · 알람 발생' }
+      ], fg: {
+        VehicleMode: [{ at: -999, s: 'Parking', k: 'off' }, { at: 0, s: '전이 중', k: 'info' }, { at: 5, s: 'Parking (롤백)', k: 'warn' }],
+        Perception: [{ at: -999, s: 'Off', k: 'off' }, { at: 1, s: '전이 중', k: 'info' }, { at: 3, s: '응답 없음', k: 'warn' }, { at: 5, s: '전이 실패', k: 'crit' }],
+        Planning: [{ at: -999, s: 'Off', k: 'off' }],
+        AI_Inference: [{ at: -999, s: 'Off', k: 'off' }],
+        Control: [{ at: -999, s: 'Off', k: 'off' }]
+      }, hist: [
+        { at: 5, fg: 'Perception', tr: 'Off → On', src: 'SM (VehicleMode 연동)', dur: '4.0s', res: '실패: 타임아웃', k: 'crit' },
+        { at: 5, fg: 'VehicleMode', tr: 'Parking → Driving', src: '차량 신호 (Gear D)', dur: '5.0s', res: '롤백', k: 'warn' }
+      ]}
+    };
+    const names = ['MachineFG', 'VehicleMode', 'Perception', 'Planning', 'Control', 'AI_Inference', 'Safety', 'Diagnostics'];
+    const fixed = { MachineFG: { s: 'Running', k: 'ok' }, Safety: { s: 'On', k: 'ok' }, Diagnostics: { s: 'On', k: 'ok' } };
+    const baseFg = { VehicleMode: { s: 'Parking', k: 'off' } };
+    const fgs = names.map(n => {
+      let c = fixed[n] || baseFg[n] || { s: 'Off', k: 'off' };
+      if (sc && SC[sc].fg[n]) c = pick(SC[sc].fg[n]);
+      const active = c.k === 'info' || c.k === 'crit' || c.k === 'warn';
+      return { name: n, state: c.s, fg: tn(c.k)[0], bg: active ? tn(c.k)[1] : '#0E1116', border: active ? tn(c.k)[0] : '#2A313C', note: c.k === 'info' ? '전이 진행 중' : (n === 'MachineFG' ? 'Machine State' : '') };
+    });
+    const vm = fgs[1].state;
+    const node = (name, on, sub, k) => ({ name, sub: sub || '', border: on ? tn(k || 'ok')[0] : '#2A313C', bg: on ? tn(k || 'ok')[1] : '#0E1116', fg: on ? '#E6EAF0' : '#9AA4B2', subFg: on ? tn(k || 'ok')[0] : '#8B95A3' });
+    const mach = [node('Startup', false, '2.9s 소요'), node('Running', true, '현재'), node('Shutdown', false), node('Restart', false)].map((n, i, a) => ({ ...n, arrow: i < a.length - 1 }));
+    const vmNodes = [
+      node('Parking', vm.indexOf('Parking') === 0, vm.indexOf('롤백') > 0 ? '롤백됨' : '', vm.indexOf('롤백') > 0 ? 'warn' : 'ok'),
+      node('전이 중', vm === '전이 중', '', 'info'),
+      node('Driving', vm === 'Driving', ''),
+      node('SafeStop', false, '')
+    ].map((n, i, a) => ({ ...n, arrow: i < a.length - 1 }));
+    const machines = [{ title: 'Machine State', nodes: mach }, { title: 'VehicleMode (사용자 정의 FG)', nodes: vmNodes }];
+
+    const histBase = [{ time: '14:18:30', fg: 'MachineFG', tr: 'Startup → Running', src: 'EM 기동 완료', dur: '2.9s', res: '성공', k: 'ok' }];
+    const newer = sc ? SC[sc].hist.filter(h => el >= h.at).map(h => ({ ...h, time: clock(s0 + h.at) })) : [];
+    const hist = newer.reverse().concat(histBase).map(h => ({ ...h, fg2: tn(h.k)[0], bg2: tn(h.k)[1] }));
+
+    const drivingNow = vm === 'Driving';
+    const power = [
+      { k: 'Power Mode', v: 'Normal', fg: '#3FB950' },
+      { k: 'Partial Networking', v: drivingNow ? 'PN 4/4 활성' : 'PN 2/4 활성', fg: '#E6EAF0' },
+      { k: '네트워크 관리 상태', v: 'Network Mode', fg: '#E6EAF0' },
+      { k: '슬립 진입 조건', v: drivingNow ? '불가 (주행 중)' : '대기 중', fg: '#9AA4B2' }
+    ];
+
+    const spec = [
+      ['SM-01', 'Machine State', '현재 상태·직전 상태·가동 시간, 부팅/종료 사유', 'MVP'],
+      ['SM-02', 'Function Group 보드', 'FG별 현재 상태, 전이 중 강조, 소속 프로세스 수', 'MVP'],
+      ['SM-03', '전이 이력', '시각, 대상, from→to, 소요 시간, 결과 기록', 'MVP'],
+      ['SM-04', '실패 원인 분석', '타임아웃, 프로세스 기동 실패, 롤백 여부와 관련 로그', '2단계'],
+      ['SM-05', '상태 머신 다이어그램', 'Machine State·사용자 정의 FG를 그래프로, 현재 상태 강조', '2단계'],
+      ['SM-06', '트리거 소스', '전이를 요청한 주체 (차량 신호, 진단, PHM, 사용자)', '2단계'],
+      ['SM-07', '수동 전이 요청', '테스트 모드 전용, 권한 확인, 감사 로그', '3단계'],
+      ['SM-08', '전원·네트워크 모드', 'Power mode, Partial Networking, 슬립 진입 조건', '3단계']
+    ].map(s => ({ id: s[0], name: s[1], desc: s[2], ph: s[3], pc: PH[s[3]] }));
+
+    const scenarios = Object.keys(SC).map(k => ({ label: SC[k].label, run: () => this.setState({ sc: k, s0: this.state.t, running: true }), bg: sc === k ? '#4C9AFF' : '#0E1116', fg: sc === k ? '#0E1116' : '#E6EAF0' }));
+    return {
+      t, runLabel: running ? '일시정지' : '재생', toggle: () => this.setState({ running: !this.state.running }),
+      reset: () => this.setState({ t: 0, sc: null, s0: 0, running: true }),
+      scenarios, noSc: !sc, hasSc: !!sc, scTitle: sc ? SC[sc].label : '', steps: sc ? mkSteps(SC[sc].steps) : [],
+      spec, specCount: spec.length, machines, fgs, hist, power
+    };
+  }
+}
+</script>
+</body>
+</html>

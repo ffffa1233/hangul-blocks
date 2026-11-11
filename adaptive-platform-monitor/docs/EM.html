@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EM 실행 관리</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#8AB8FF;border:1px solid #2A4A75;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.btn:disabled{color:#8B95A3;cursor:not-allowed}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+</style>
+<script src="./runtime.js"></script>
+</head>
+<body>
+<script type="text/x-dc-template" id="dc-template">
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<a href="Main.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; background: #1E252F; color: #C9D1D9; border-radius: 4px; padding: 2px 6px">EM</span><h1 style="margin: 0; font-size: 18px">실행 관리</h1></div>
+<div class="muted" style="font-size: 12px">프로세스 생명주기 · 기동 순서 · 재시작 정책 · 리소스 한도</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span class="mono" style="font-size: 12px; color: #9AA4B2">시뮬레이션 T+{{t}}s</span>
+<button type="button" class="btn" onClick="{{toggle}}">{{runLabel}}</button>
+<sc-for list="{{scenarios}}" as="s" hint-placeholder-count="2"><button type="button" class="btn" onClick="{{s.run}}" style="background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for>
+<button type="button" class="btn" onClick="{{reset}}">초기화</button>
+</div>
+</header>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 40px">
+<aside style="flex: 1 1 300px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section class="card" aria-labelledby="sc-t">
+<h2 id="sc-t" class="h2">시나리오 진행</h2>
+<sc-if value="{{noSc}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">상단 시나리오 버튼을 누르면 단계별로 진행됩니다. 지금은 정상 상태 값이 1초마다 갱신됩니다.</div></sc-if>
+<sc-if value="{{hasSc}}" hint-placeholder-val="{{false}}">
+<div style="font-size: 13px; font-weight: 500; margin-bottom: 6px">{{scTitle}}</div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; padding: 6px 0"><span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: {{s.dot}}; margin-top: 5px"></span><div><div style="font-size: 13px; color: {{s.fg}}">{{s.text}}</div><div class="mono" style="font-size: 11px; color: #8B95A3">{{s.at}} · {{s.tag}}</div></div></div>
+</sc-for>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="spec-t">
+<h2 id="spec-t" class="h2">기능 명세 <span class="sub">{{specCount}}개</span></h2>
+<sc-for list="{{spec}}" as="f" hint-placeholder-count="8">
+<div style="padding: 9px 0; border-bottom: 1px solid #1E252F">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; color: #8AB8FF">{{f.id}}</span><span style="font-size: 13px; font-weight: 500; flex: 1">{{f.name}}</span><span style="font-size: 10px; color: {{f.pc}}; border: 1px solid {{f.pc}}; border-radius: 10px; padding: 0 6px; white-space: nowrap">{{f.ph}}</span></div>
+<div class="muted" style="font-size: 12px; margin-top: 2px">{{f.desc}}</div>
+</div>
+</sc-for>
+</section>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<section class="card" aria-labelledby="p-t">
+<h2 id="p-t" class="h2">프로세스 목록 <span class="tag">EM-01</span><span class="tag">EM-02</span><span class="tag">EM-06</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 760px">
+<thead><tr><th>프로세스</th><th>FG</th><th>상태</th><th style="text-align: right">PID</th><th style="text-align: right">CPU</th><th style="text-align: right">RSS</th><th style="text-align: right">스레드</th><th style="text-align: right">재시작</th><th>정책</th></tr></thead>
+<tbody>
+<sc-for list="{{procs}}" as="p" hint-placeholder-count="8">
+<tr style="background: {{p.rowBg}}">
+<td class="mono" style="font-size: 12px">{{p.name}}</td>
+<td style="font-size: 12px; color: #C9D1D9">{{p.fg}}</td>
+<td><span class="chip" style="color: {{p.sfg}}; background: {{p.sbg}}">{{p.state}}</span></td>
+<td class="mono" style="font-size: 12px; text-align: right; color: #9AA4B2">{{p.pid}}</td>
+<td style="text-align: right"><div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px"><div style="width: 56px; height: 6px; border-radius: 3px; background: #1E252F; overflow: hidden"><div style="height: 6px; width: {{p.cpuW}}; background: #4C9AFF"></div></div><span class="mono" style="font-size: 12px; width: 44px">{{p.cpu}}</span></div></td>
+<td class="mono" style="font-size: 12px; text-align: right">{{p.mem}}</td>
+<td class="mono" style="font-size: 12px; text-align: right">{{p.thr}}</td>
+<td class="mono" style="font-size: 12px; text-align: right; color: {{p.rc}}">{{p.r}}</td>
+<td style="font-size: 12px; color: #9AA4B2">{{p.policy}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<section class="card" aria-labelledby="d-t" style="flex: 1 1 320px">
+<h2 id="d-t" class="h2">ai_infer_svc 상세 <span class="tag">EM-05</span></h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; font-size: 13px">
+<div><div class="muted" style="font-size: 12px">현재 상태</div><div style="font-weight: 700; color: {{ai.sfg}}">{{ai.state}}</div></div>
+<div><div class="muted" style="font-size: 12px">마지막 종료 원인</div><div class="mono" style="color: {{ai.exitColor}}">{{ai.exit}}</div></div>
+<div><div class="muted" style="font-size: 12px">Core dump</div><div class="mono" style="font-size: 12px">{{ai.core}}</div></div>
+<div><div class="muted" style="font-size: 12px">현재 PID</div><div class="mono">{{ai.pid}}</div></div>
+</div>
+<div style="margin-top: 14px">
+<div style="display: flex; justify-content: space-between; font-size: 12px"><span class="muted">재시작 한도 (60초 내 3회)</span><span class="mono" style="color: {{ai.rc}}">{{ai.r}} / 3</span></div>
+<div style="height: 8px; border-radius: 4px; background: #1E252F; overflow: hidden; margin-top: 4px"><div style="height: 8px; width: {{ai.rW}}; background: {{ai.rc}}"></div></div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px">
+<button type="button" class="btn" disabled>재시작 (운영자 권한) <span class="tag">EM-08</span></button>
+<button type="button" class="btn" disabled>종료</button>
+</div>
+</section>
+<section class="card" aria-labelledby="cg-t" style="flex: 1 1 320px">
+<h2 id="cg-t" class="h2">cgroup 한도 대비 사용량 <span class="tag">EM-07</span></h2>
+<sc-for list="{{cg}}" as="c" hint-placeholder-count="4">
+<div style="margin-bottom: 12px">
+<div style="display: flex; justify-content: space-between; font-size: 12px"><span class="mono" style="color: #C9D1D9">{{c.name}}</span><span class="mono" style="color: {{c.color}}">{{c.text}}</span></div>
+<div style="height: 6px; border-radius: 3px; background: #1E252F; overflow: hidden; margin-top: 4px"><div style="height: 6px; width: {{c.w}}; background: {{c.color}}"></div></div>
+</div>
+</sc-for>
+</section>
+</div>
+
+<section class="card" aria-labelledby="g-t">
+<h2 id="g-t" class="h2">기동 타임라인 <span class="sub">마지막 부팅 · 총 7.4s</span><span class="tag">EM-03</span><span class="tag">EM-04</span></h2>
+<div style="overflow-x: auto">
+<div style="min-width: 640px">
+<div style="display: flex; margin-left: 170px; border-bottom: 1px solid #2A313C; padding-bottom: 4px">
+<sc-for list="{{ticks}}" as="k" hint-placeholder-count="9"><span class="mono" style="flex: 1; font-size: 10px; color: #8B95A3">{{k}}</span></sc-for>
+</div>
+<sc-for list="{{gantt}}" as="g" hint-placeholder-count="10">
+<div style="display: flex; align-items: center; height: 30px">
+<span class="mono" style="width: 170px; flex: none; font-size: 12px; color: #C9D1D9">{{g.name}}</span>
+<div style="flex: 1; position: relative; height: 18px">
+<div style="position: absolute; top: 0; height: 18px; border-radius: 4px; left: {{g.left}}; width: {{g.width}}; background: {{g.color}}"></div>
+<span class="mono" style="position: absolute; top: 1px; font-size: 10px; color: #9AA4B2; left: {{g.labelLeft}}; white-space: nowrap; padding-left: 6px">{{g.label}}</span>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section class="card" aria-labelledby="m-t">
+<h2 id="m-t" class="h2">Execution Manifest 요약 <span class="tag">EM-09</span><span class="tag">EM-10</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 680px">
+<thead><tr><th>프로세스</th><th>기동 조건</th><th>스케줄링</th><th style="text-align: right">우선순위</th><th>코어</th></tr></thead>
+<tbody>
+<sc-for list="{{mf}}" as="m" hint-placeholder-count="5">
+<tr><td class="mono" style="font-size: 12px">{{m.name}}</td><td style="font-size: 12px; color: #C9D1D9">{{m.dep}}</td><td class="mono" style="font-size: 12px">{{m.sched}}</td><td class="mono" style="font-size: 12px; text-align: right">{{m.prio}}</td><td class="mono" style="font-size: 12px">{{m.core}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+</main>
+</div>
+</div>
+</script>
+<script>
+window.__DC_PROPS = {"$preview":{"width":1440,"height":1500}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, running: true, sc: null, s0: 0 };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { if (this.state.running) this.setState({ t: this.state.t + 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, running, sc, s0 } = this.state;
+    const el = sc ? t - s0 : -1;
+    const T = { ok: ['#3FB950', 'rgba(63,185,80,0.14)'], warn: ['#E3A008', 'rgba(227,160,8,0.14)'], crit: ['#F85149', 'rgba(248,81,73,0.14)'], info: ['#4C9AFF', 'rgba(76,154,255,0.14)'], off: ['#9AA4B2', 'rgba(154,164,178,0.10)'] };
+    const tn = (k) => T[k] || T.off;
+    const PH = { MVP: '#4C9AFF', '2단계': '#3FB9A8', '3단계': '#9AA4B2' };
+    const pick = (tl) => { let c = tl[0]; tl.forEach(x => { if (el >= x.at) c = x; }); return c; };
+    const mkSteps = (L) => L.map((s, i) => { const n = L[i + 1]; const st = el < s.at ? 'p' : (n && el >= n.at ? 'd' : 'a'); const c = { d: ['#3FB950', '#C9D1D9', '완료'], a: ['#4C9AFF', '#E6EAF0', '진행 중'], p: ['#3A424E', '#8B95A3', '대기'] }[st]; return { at: '+' + s.at + 's', text: s.text, dot: c[0], fg: c[1], tag: c[2] }; });
+    const wv = (i, base, amp) => Math.max(0, base + amp * Math.sin(t * 0.8 + i * 1.7) + amp * 0.4 * Math.sin(t * 2.1 + i));
+
+    const SC = {
+      crash: { label: '앱 크래시 → 자동 재시작', steps: [
+        { at: 0, text: 'ai_infer_svc가 SIGSEGV(11)로 종료, core dump 저장' },
+        { at: 1, text: 'EM이 종료를 감지하고 PHM에 보고' },
+        { at: 2, text: '재시작 정책 확인(1/3) → Starting' },
+        { at: 4, text: 'ReportExecutionState(Running) 수신, 정상 복귀' }
+      ], tl: [
+        { at: -999, st: 'Running', r: 0, exit: '—', core: '—' },
+        { at: 0, st: 'Terminated', r: 0, exit: 'SIGSEGV (11)', core: '/var/core/ai_infer_svc.2210' },
+        { at: 2, st: 'Starting', r: 1, exit: 'SIGSEGV (11)', core: '/var/core/ai_infer_svc.2210' },
+        { at: 4, st: 'Running', r: 1, exit: 'SIGSEGV (11)', core: '/var/core/ai_infer_svc.2210' }
+      ]},
+      limit: { label: '재시작 한도 초과 → FG 정지', steps: [
+        { at: 0, text: '1차 종료: SIGABRT(6) — 모델 파일 로드 실패' },
+        { at: 2, text: '재시작 1/3 시도 → 기동 중 다시 종료' },
+        { at: 5, text: '재시작 2/3 시도 → 다시 종료' },
+        { at: 8, text: '재시작 3/3 시도 → 다시 종료' },
+        { at: 10, text: '한도 초과: EM이 SM에 보고 → FG AI_Inference Off' }
+      ], tl: [
+        { at: -999, st: 'Running', r: 0, exit: '—', core: '—' },
+        { at: 0, st: 'Terminated', r: 0, exit: 'SIGABRT (6)', core: '/var/core/ai_infer_svc.2210' },
+        { at: 2, st: 'Starting', r: 1, exit: 'SIGABRT (6)', core: '/var/core/ai_infer_svc.2210' },
+        { at: 3, st: 'Terminated', r: 1, exit: 'SIGABRT (6)', core: '/var/core/ai_infer_svc.2217' },
+        { at: 5, st: 'Starting', r: 2, exit: 'SIGABRT (6)', core: '/var/core/ai_infer_svc.2217' },
+        { at: 6, st: 'Terminated', r: 2, exit: 'SIGABRT (6)', core: '/var/core/ai_infer_svc.2224' },
+        { at: 8, st: 'Starting', r: 3, exit: 'SIGABRT (6)', core: '/var/core/ai_infer_svc.2224' },
+        { at: 9, st: 'Terminated', r: 3, exit: 'SIGABRT (6)', core: '/var/core/ai_infer_svc.2231' },
+        { at: 10, st: 'Off (한도 초과)', r: 3, exit: 'SIGABRT (6)', core: '/var/core/ai_infer_svc.2231' }
+      ]}
+    };
+    const base = [{ at: -999, st: 'Running', r: 0, exit: '—', core: '—' }];
+    const cur = pick(sc ? SC[sc].tl : base);
+    const stTone = { Running: 'ok', Starting: 'info', Terminated: 'crit' }[cur.st] || 'off';
+    const aiCpu = cur.st === 'Running' ? wv(9, 14, 3) : (cur.st === 'Starting' ? 31 : 0);
+
+    const P = [
+      ['em_daemon', 'MachineFG', 412, 1.2, '18 MB', 6, '—'],
+      ['sm_daemon', 'MachineFG', 418, 0.5, '9 MB', 4, '—'],
+      ['com_gateway', 'MachineFG', 430, 3.6, '22 MB', 12, '3회/60s'],
+      ['dlt_daemon', 'MachineFG', 436, 1.1, '14 MB', 3, '3회/60s'],
+      ['perception_app', 'Perception', 1022, 40, '820 MB', 24, '3회/60s'],
+      ['planning_app', 'Planning', 1104, 21, '310 MB', 10, '3회/60s'],
+      ['control_app', 'Control', 1180, 8, '64 MB', 6, '재시작 없음'],
+      ['ai_infer_svc', 'AI_Inference', 2210, 0, '1.1 GB', 18, '3회/60s']
+    ];
+    const procs = P.map((p, i) => {
+      const isAi = p[0] === 'ai_infer_svc';
+      const cpu = isAi ? aiCpu : wv(i, p[3], p[3] * 0.15);
+      const st = isAi ? cur.st : 'Running';
+      const tone = isAi ? stTone : 'ok';
+      const r = isAi ? cur.r : 0;
+      return {
+        name: p[0], fg: p[1], state: st, pid: isAi ? (cur.st.indexOf('Off') === 0 || cur.st === 'Terminated' ? '—' : String(2210 + r * 7)) : String(p[2]),
+        cpu: cpu ? cpu.toFixed(1) + '%' : '—', cpuW: Math.min(100, cpu) + '%',
+        mem: isAi && st !== 'Running' && st !== 'Starting' ? '—' : p[4], thr: isAi && st !== 'Running' ? '—' : String(p[5]),
+        r: String(r), rc: r > 0 ? '#F85149' : '#9AA4B2', policy: p[6],
+        sfg: tn(tone)[0], sbg: tn(tone)[1], rowBg: isAi && sc ? 'rgba(248,81,73,0.06)' : 'transparent'
+      };
+    });
+    const ai = {
+      state: cur.st, sfg: tn(stTone)[0], exit: cur.exit, exitColor: cur.exit === '—' ? '#9AA4B2' : '#F85149',
+      core: cur.core, pid: procs[7].pid, r: cur.r, rW: (cur.r / 3 * 100) + '%', rc: cur.r >= 3 ? '#F85149' : (cur.r > 0 ? '#E3A008' : '#3FB950')
+    };
+    const cgRaw = [
+      ['perception.slice', wv(1, 72, 5), 'CPU 72% / quota 200%', 36],
+      ['planning.slice', wv(2, 310, 8), '', 0],
+      ['ai_inference.slice', cur.st === 'Running' ? wv(3, 1100, 30) : (cur.st === 'Starting' ? 1500 : 0), '', 0],
+      ['persist.slice (I/O)', wv(4, 12, 3), '', 0]
+    ];
+    const cg = [
+      { name: 'perception.slice · CPU', v: cgRaw[0][1], lim: 200, unit: '%' },
+      { name: 'planning.slice · MEM', v: cgRaw[1][1], lim: 512, unit: 'MB' },
+      { name: 'ai_inference.slice · MEM', v: cgRaw[2][1], lim: 1536, unit: 'MB' },
+      { name: 'persist.slice · I/O', v: cgRaw[3][1], lim: 40, unit: 'MB/s' }
+    ].map(c => { const pct = Math.min(100, c.v / c.lim * 100); return { name: c.name, text: Math.round(c.v) + ' / ' + c.lim + ' ' + c.unit, w: pct + '%', color: pct >= 90 ? '#F85149' : (pct >= 75 ? '#E3A008' : '#4C9AFF') }; });
+
+    const G = [
+      ['kernel', 0, 1.2, '', '#3A424E'], ['init/systemd', 1.2, 2.0, '', '#3A424E'],
+      ['em_daemon', 2.0, 2.3, '', '#4C9AFF'], ['sm_daemon', 2.3, 2.5, 'after em', '#4C9AFF'],
+      ['dlt_daemon', 2.3, 2.6, 'after em', '#4C9AFF'], ['com_gateway', 2.5, 3.1, 'after sm', '#4C9AFF'],
+      ['perception_app', 3.1, 5.8, 'after com Running', '#3FB9A8'], ['planning_app', 3.4, 4.9, 'after com', '#3FB9A8'],
+      ['control_app', 3.4, 4.2, 'after com', '#3FB9A8'], ['ai_infer_svc', 3.6, 7.4, '모델 로드 3.1s — 병목', '#E3A008']
+    ];
+    const gantt = G.map(g => ({ name: g[0], left: (g[1] / 8 * 100) + '%', width: ((g[2] - g[1]) / 8 * 100) + '%', labelLeft: (g[2] / 8 * 100) + '%', label: (g[2] - g[1]).toFixed(1) + 's ' + g[3], color: g[4] }));
+
+    const mf = [
+      { name: 'com_gateway', dep: 'sm_daemon Running', sched: 'SCHED_FIFO', prio: '80', core: '0' },
+      { name: 'control_app', dep: 'com_gateway Running', sched: 'SCHED_FIFO', prio: '90', core: '1' },
+      { name: 'planning_app', dep: 'com_gateway Running', sched: 'SCHED_FIFO', prio: '70', core: '2-3' },
+      { name: 'perception_app', dep: 'com_gateway Running', sched: 'SCHED_OTHER', prio: '0', core: '4-6' },
+      { name: 'ai_infer_svc', dep: 'perception_app Running', sched: 'SCHED_OTHER', prio: '0', core: '7' }
+    ];
+
+    const spec = [
+      ['EM-01', '프로세스 목록·상태', 'Idle / Starting / Running / Terminating / Terminated 실시간 표시', 'MVP'],
+      ['EM-02', '프로세스 리소스', 'CPU, RSS, 스레드, FD 수를 1초 주기로 수집', 'MVP'],
+      ['EM-03', '기동 타임라인', '부팅 단계별 소요 시간 Gantt, 병목 강조', 'MVP'],
+      ['EM-04', '실행 의존성', 'Execution Dependency(after X Running) 표시·그래프', '2단계'],
+      ['EM-05', '비정상 종료 분석', 'exit code, signal, core dump 경로, 직전 로그 링크', 'MVP'],
+      ['EM-06', '재시작 정책 추적', '한도(횟수/시간창) 대비 현재 횟수, 초과 시 경고', '2단계'],
+      ['EM-07', 'cgroup 한도', 'slice별 CPU quota·메모리·I/O 한도 대비 사용률', '2단계'],
+      ['EM-08', '원격 제어', '재시작·종료 (운영자 권한, 감사 로그 기록)', '3단계'],
+      ['EM-09', 'Manifest 연동', '배포된 Execution Manifest의 기동 조건·인자 조회', '2단계'],
+      ['EM-10', '스케줄링 정책', 'SCHED 정책, 우선순위, 코어 affinity 확인', '2단계']
+    ].map(s => ({ id: s[0], name: s[1], desc: s[2], ph: s[3], pc: PH[s[3]] }));
+
+    const scenarios = Object.keys(SC).map(k => ({ label: SC[k].label, run: () => this.setState({ sc: k, s0: this.state.t, running: true }), bg: sc === k ? '#4C9AFF' : '#0E1116', fg: sc === k ? '#0E1116' : '#E6EAF0' }));
+    return {
+      t, runLabel: running ? '일시정지' : '재생', toggle: () => this.setState({ running: !this.state.running }),
+      reset: () => this.setState({ t: 0, sc: null, s0: 0, running: true }),
+      scenarios, noSc: !sc, hasSc: !!sc, scTitle: sc ? SC[sc].label : '', steps: sc ? mkSteps(SC[sc].steps) : [],
+      spec, specCount: spec.length, procs, ai, cg, gantt, ticks: ['0s', '1s', '2s', '3s', '4s', '5s', '6s', '7s', '8s'], mf
+    };
+  }
+}
+window.__DC_Component = Component;
+</script>
+</body>
+</html>

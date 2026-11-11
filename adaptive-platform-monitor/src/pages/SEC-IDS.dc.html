@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Security IDS 사건</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.sel{background:#0E1116;color:#E6EAF0;border:1px solid #2A313C;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;min-height:40px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C;white-space:nowrap}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.inc{width:100%;text-align:left;padding:12px;border-radius:8px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22">
+<a href="Main.dc.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div class="muted" style="font-size: 12px">Security / SEC-06</div>
+<h1 style="margin: 0; font-size: 18px">IDS 사건</h1>
+</div>
+<span class="muted" style="font-size: 12px">개별 이벤트를 규칙으로 묶어 사건 단위로 대응합니다</span>
+</header>
+<nav aria-label="Security 메뉴" style="display: flex; gap: 2px; padding: 0 24px; background: #161B22; border-bottom: 1px solid #2A313C; overflow-x: auto">
+<sc-for list="{{tabs}}" as="b" hint-placeholder-count="8"><a href="{{b.href}}" style="padding: 12px 14px; white-space: nowrap; text-decoration: none; font-size: 13px; color: {{b.fg}}; border-bottom: 2px solid {{b.line}}">{{b.label}}</a></sc-for>
+</nav>
+
+<div style="padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<div class="card" style="padding: 14px"><div class="muted" style="font-size: 12px">{{k.label}}</div><div class="mono" style="font-size: 24px; font-weight: 500; color: {{k.c}}">{{k.v}}</div><div class="muted" style="font-size: 12px">{{k.sub}}</div></div>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<aside class="card" aria-labelledby="il-t" style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 8px">
+<h2 id="il-t" class="h2">사건 목록</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px"><sc-for list="{{filters}}" as="f" hint-placeholder-count="4"><button type="button" class="btn" aria-pressed="{{f.pressed}}" onClick="{{f.pick}}" style="min-height: 34px; font-size: 12px; padding: 0 10px; background: {{f.bg}}; color: {{f.fg}}">{{f.label}}</button></sc-for></div>
+<sc-for list="{{incs}}" as="i" hint-placeholder-count="4">
+<button type="button" class="inc" onClick="{{i.pick}}" style="border-color: {{i.bd}}; background: {{i.bg}}">
+<span style="display: flex; justify-content: space-between; gap: 8px"><span class="mono muted" style="font-size: 12px">{{i.id}}</span><span class="chip" style="color: {{i.sevFg}}; background: {{i.sevBg}}">{{i.sev}}</span></span>
+<span style="font-weight: 500">{{i.title}}</span>
+<span style="display: flex; justify-content: space-between; gap: 8px; font-size: 12px"><span style="color: {{i.stC}}">{{i.status}}</span><span class="mono muted">{{i.last}} · {{i.events}}건</span></span>
+</button>
+</sc-for>
+</aside>
+
+<main class="card" aria-labelledby="dt-t" style="flex: 3 1 560px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: flex-start">
+<div>
+<div class="mono muted" style="font-size: 12px">{{c.id}} · 규칙 {{c.rule}}</div>
+<h2 id="dt-t" class="h2" style="margin: 2px 0 0; font-size: 17px">{{c.title}}</h2>
+</div>
+<div style="display: flex; gap: 8px; align-items: center"><span class="chip" style="color: {{c.sevFg}}; background: {{c.sevBg}}">{{c.sev}}</span><span class="chip" style="color: {{c.stC}}; background: rgba(154,164,178,0.10)">{{c.status}}</span></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 14px 0">
+<div><div class="muted" style="font-size: 12px">처음 탐지</div><div class="mono" style="font-size: 13px">{{c.first}}</div></div>
+<div><div class="muted" style="font-size: 12px">마지막</div><div class="mono" style="font-size: 13px">{{c.last}}</div></div>
+<div><div class="muted" style="font-size: 12px">묶인 이벤트</div><div class="mono" style="font-size: 13px">{{c.events}}건</div></div>
+<label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: #9AA4B2">담당자<select class="sel" style="min-height: 34px; padding: 4px 8px"><option>{{c.owner}}</option><option>kim (보안)</option><option>lee (플랫폼)</option><option>미지정</option></select></label>
+</div>
+
+<div class="muted" style="font-size: 12px; margin-bottom: 4px">영향 자산</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px"><sc-for list="{{c.assets}}" as="a" hint-placeholder-count="3"><span class="chip mono" style="color: #C9D1D9; background: #1E252F">{{a}}</span></sc-for></div>
+
+<div class="muted" style="font-size: 12px; margin-bottom: 6px">연관 이벤트 타임라인</div>
+<div style="border-left: 2px solid #2A313C; margin-left: 6px; padding-left: 14px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px">
+<sc-for list="{{c.tl}}" as="e" hint-placeholder-count="5">
+<div style="position: relative"><span style="position: absolute; left: -21px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: {{e.c}}"></span>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><span class="mono muted" style="font-size: 12px">{{e.time}}</span><span class="chip" style="color: {{e.c}}; background: #1E252F">{{e.src}}</span><a href="{{e.href}}" style="font-size: 12px">원본</a></div>
+<div style="font-size: 13px">{{e.text}}</div></div>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<div style="flex: 1 1 260px"><div class="muted" style="font-size: 12px; margin-bottom: 4px">탐지 근거</div><div style="font-size: 13px">{{c.why}}</div></div>
+<div style="flex: 1 1 260px"><div class="muted" style="font-size: 12px; margin-bottom: 4px">권장 대응</div>
+<sc-for list="{{c.todo}}" as="d" hint-placeholder-count="3"><label style="display: flex; gap: 8px; align-items: flex-start; font-size: 13px; padding: 4px 0; cursor: pointer"><input type="checkbox" checked="{{d.on}}" onChange="{{d.toggle}}" style="width: 16px; height: 16px; margin-top: 2px"><span style="color: {{d.c}}">{{d.t}}</span></label></sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px">
+<button type="button" class="btn" onClick="{{toInvest}}">조사 시작</button>
+<button type="button" class="btn" onClick="{{toDone}}" style="border-color: #2B5D36; color: #3FB950">대응 완료로 종결</button>
+<button type="button" class="btn" onClick="{{toFalse}}">오탐으로 종결</button>
+</div>
+
+<div style="margin-top: 16px"><div class="muted" style="font-size: 12px; margin-bottom: 6px">메모</div>
+<sc-for list="{{notes}}" as="n" hint-placeholder-count="1"><div style="padding: 8px 10px; border-radius: 6px; background: #0E1116; border: 1px solid #1E252F; margin-bottom: 6px; font-size: 13px"><span class="mono muted" style="font-size: 11px">{{n.meta}}</span><div>{{n.t}}</div></div></sc-for>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><label style="flex: 1 1 240px"><span style="position: absolute; left: -9999px">메모 입력</span><input type="text" class="sel" style="width: 100%; box-sizing: border-box" placeholder="조사 내용을 남기세요" value="{{draft}}" onInput="{{typeDraft}}"></label><button type="button" class="btn" onClick="{{addNote}}">메모 추가</button></div>
+</div>
+</main>
+</div>
+
+<section class="card" aria-labelledby="ru-t">
+<h2 id="ru-t" class="h2">탐지 규칙</h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 760px">
+<thead><tr><th>규칙</th><th>조건</th><th>처리 위치</th><th style="text-align: right">24시간 탐지</th><th style="text-align: right">오탐률 (30일)</th><th>사용</th></tr></thead>
+<tbody>
+<sc-for list="{{rules}}" as="r" hint-placeholder-count="5">
+<tr><td><div class="mono" style="font-size: 12px">{{r.id}}</div><div style="font-size: 13px">{{r.name}}</div></td><td class="mono" style="font-size: 12px; color: #C9D1D9">{{r.cond}}</td><td style="font-size: 12px">{{r.where}}</td><td class="mono" style="font-size: 12px; text-align: right">{{r.hits}}</td><td class="mono" style="font-size: 12px; text-align: right; color: {{r.fpC}}">{{r.fp}}</td><td><label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer"><input type="checkbox" checked="{{r.on}}" onChange="{{r.toggle}}" style="width: 16px; height: 16px">{{r.onLabel}}</label></td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<div class="muted" style="font-size: 12px; margin-top: 8px">규칙 변경은 감사 로그에 남습니다. Agent 처리 규칙은 다음 설정 동기화 때 ECU에 반영됩니다.</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 'INC-031', filt: 'open', st: {}, todo: {}, notes: {}, draft: '', rulesOff: {} };
+  }
+  renderVals() {
+    const { sel, filt, st, todo, notes, draft, rulesOff } = this.state;
+    const ME = 'SEC-IDS';
+    const TABS = [['SEC', '개요'], ['SEC-IAM', '접근 거부'], ['SEC-PERM', '권한 매트릭스'], ['SEC-SECOC', 'SecOC'], ['SEC-BOOT', 'Secure Boot'], ['SEC-CERT', '인증서·키'], ['SEC-IDS', 'IDS 사건'], ['SEC-AUDIT', '감사 로그']];
+    const tabs = TABS.map(([f, l]) => ({ href: f === ME ? '#' : f + '.dc.html', label: l, fg: f === ME ? '#E6EAF0' : '#9AA4B2', line: f === ME ? '#4C9AFF' : 'transparent' }));
+    const SEV = { CRIT: ['#F85149', 'rgba(248,81,73,0.14)'], WARN: ['#E3A008', 'rgba(227,160,8,0.14)'], INFO: ['#4C9AFF', 'rgba(76,154,255,0.14)'] };
+    const STC = { '신규': '#F85149', '조사 중': '#E3A008', '종결 · 대응 완료': '#3FB950', '종결 · 오탐': '#9AA4B2' };
+    const SRCC = { SecOC: '#F85149', IAM: '#4C9AFF', 'SOME/IP-SD': '#B48CFF', 방화벽: '#3FB9A8', seccomp: '#E3A008', IDS: '#E6EAF0' };
+    const I = [
+      { id: 'INC-031', sev: 'CRIT', title: 'VehicleState 위조·재전송 시도', status: '신규', rule: 'R-02 + R-04', first: '17:30:02', last: '17:30:07', events: 17, owner: '미지정',
+        assets: ['VehicleState 0x2001', 'eth0', '192.168.10.77'],
+        tl: [['17:30:02', 'SecOC', 'MAC 검증 실패 9건 — 프레임 모두 폐기', 'SEC-SECOC.dc.html'], ['17:30:05', 'SecOC', 'Freshness 역행 6건 — 예전 값 재사용', 'SEC-SECOC.dc.html'], ['17:30:05', 'SOME/IP-SD', '등록되지 않은 송신자 192.168.10.77이 VehicleState 송신', 'COM.dc.html'], ['17:30:06', '방화벽', '192.168.10.77 → UDP 30509 수신 기록', 'LOG.dc.html'], ['17:30:07', 'IDS', '규칙 R-02, R-04가 10초 안에 함께 발생 → 사건 생성', '#']],
+        why: 'MAC 실패(위조)와 Freshness 역행(재전송)이 같은 출처에서 10초 안에 연달아 발생했습니다. 단순 통신 오류보다 의도적 시도일 가능성이 큽니다.',
+        todo: ['192.168.10.77이 벤치 장비인지 확인', '해당 출처 차단 정책 적용 (운영자 승인)', 'SecOC 키 k-vs-03 노출 여부 점검'] },
+      { id: 'INC-030', sev: 'WARN', title: 'hmi_bridge 반복 접근 거부', status: '조사 중', rule: 'R-01', first: '16:31:10', last: '17:29:12', events: 41, owner: 'kim (보안)',
+        assets: ['hmi_bridge', 'Trajectory 0x1101', '/dev/can0'],
+        tl: [['16:31:10', 'IAM', 'Trajectory 구독 거부, 이후 1분마다 반복', 'SEC-IAM.dc.html'], ['17:21:40', 'IAM', '/dev/can0 열기 거부 (SELinux)', 'SEC-IAM.dc.html'], ['17:24:03', 'seccomp', 'socket(AF_PACKET) 호출 거부', 'SEC-IAM.dc.html'], ['17:29:12', 'IAM', 'Trajectory 구독 거부 누적 38회', 'SEC-IAM.dc.html']],
+        why: '한 앱이 권한 밖의 서비스, 장치, 원시 소켓에 연달아 접근을 시도했습니다. 버그일 수도 있지만 패턴은 권한 상승 시도와 비슷합니다.',
+        todo: ['hmi_bridge 1.2.4 변경 내역 확인', '앱 담당자에게 의도 확인', '필요 시 hmi_bridge 격리 (FG 정지)'] },
+      { id: 'INC-029', sev: 'WARN', title: '알 수 없는 서비스 Offer', status: '종결 · 오탐', rule: 'R-05', first: '11-09 10:02', last: '11-09 10:40', events: 6, owner: 'lee (플랫폼)',
+        assets: ['SOME/IP-SD', '0x7F01'],
+        tl: [['10:02:11', 'SOME/IP-SD', 'Manifest에 없는 서비스 0x7F01 Offer', 'COM.dc.html'], ['10:40:30', 'SOME/IP-SD', '같은 Offer 중단', 'COM.dc.html']],
+        why: 'Manifest에 정의되지 않은 서비스가 Offer되었습니다.', todo: ['출처 확인: 벤치 시험 도구로 확인됨'] },
+      { id: 'INC-028', sev: 'INFO', title: '진단 VLAN 포트 스캔', status: '종결 · 대응 완료', rule: 'R-06', first: '11-07 15:20', last: '11-07 15:21', events: 212, owner: 'kim (보안)',
+        assets: ['eth1.20', '진단 VLAN'],
+        tl: [['15:20:04', '방화벽', '60초 동안 포트 198개 접근 시도', 'LOG.dc.html']],
+        why: '짧은 시간에 많은 포트를 순서대로 두드렸습니다.', todo: ['진단 장비 펌웨어 확인', '진단 VLAN 허용 포트 축소'] }
+    ];
+    const statusOf = (i) => st[i.id] || i.status;
+    const open = (s) => s.indexOf('종결') !== 0;
+    const list = I.filter(i => filt === 'all' || (filt === 'open' ? open(statusOf(i)) : statusOf(i).indexOf('종결') === 0));
+    const incs = list.map(i => ({ ...i, status: statusOf(i), stC: STC[statusOf(i)], sevFg: SEV[i.sev][0], sevBg: SEV[i.sev][1], bd: i.id === sel ? '#4C9AFF' : '#2A313C', bg: i.id === sel ? 'rgba(76,154,255,0.10)' : '#0E1116', pick: () => this.setState({ sel: i.id, draft: '' }) }));
+    const raw = I.find(i => i.id === sel);
+    const s = statusOf(raw);
+    const c = {
+      ...raw, status: s, stC: STC[s], sevFg: SEV[raw.sev][0], sevBg: SEV[raw.sev][1],
+      tl: raw.tl.map(e => ({ time: e[0], src: e[1], text: e[2], href: e[3], c: SRCC[e[1]] || '#9AA4B2' })),
+      todo: raw.todo.map((t, k) => { const key = raw.id + k; const on = !!todo[key] || (s.indexOf('종결') === 0); return { t, on, c: on ? '#8B95A3' : '#E6EAF0', toggle: () => this.setState({ todo: { ...this.state.todo, [key]: !this.state.todo[key] } }) }; })
+    };
+    const baseNotes = { 'INC-030': [{ meta: 'kim · 17:02', t: '1.2.4 배포 후 시작됨. 앱 팀에 문의함.' }], 'INC-029': [{ meta: 'lee · 11-09 11:05', t: '벤치 시험 도구가 남긴 Offer. 규칙 예외에 벤치 MAC 추가.' }] };
+    const nl = (baseNotes[sel] || []).concat(notes[sel] || []);
+    const setSt = (v) => () => this.setState({ st: { ...this.state.st, [this.state.sel]: v } });
+    const R = [
+      ['R-01', '반복 접근 거부', '같은 주체 거부 ≥ 5회 / 10분', 'Agent', 41, '6%'],
+      ['R-02', 'MAC 실패 급증', 'SecOC MAC 실패 ≥ 3회 / 10초', 'Agent', 9, '0%'],
+      ['R-04', 'Freshness 역행', '수신 FV < 기대 FV − 허용폭', 'Agent', 6, '0%'],
+      ['R-05', '미등록 서비스 Offer', 'Manifest에 없는 Service ID', '서버', 0, '50%'],
+      ['R-06', '포트 스캔', '서로 다른 포트 ≥ 50개 / 60초', 'Agent', 0, '3%'],
+      ['R-10', '사건 묶기', '위 규칙 2개 이상이 10초 안에 같은 출처', '서버', 1, '—']
+    ];
+    const rules = R.map(r => ({ id: r[0], name: r[1], cond: r[2], where: r[3], hits: String(r[4]), fp: r[5], fpC: r[5] === '50%' ? '#E3A008' : '#9AA4B2', on: !rulesOff[r[0]], onLabel: rulesOff[r[0]] ? '꺼짐' : '켜짐', toggle: () => this.setState({ rulesOff: { ...this.state.rulesOff, [r[0]]: !this.state.rulesOff[r[0]] } }) }));
+    const openCount = I.filter(i => open(statusOf(i))).length;
+    const kpis = [
+      { label: '열린 사건', v: String(openCount), sub: 'Critical 1 포함', c: openCount ? '#F85149' : '#3FB950' },
+      { label: '오늘 신규', v: '2', sub: 'INC-030, INC-031', c: '#E6EAF0' },
+      { label: '평균 첫 대응', v: '18분', sub: '최근 30일', c: '#E6EAF0' },
+      { label: '켜진 규칙', v: String(R.length - Object.values(rulesOff).filter(Boolean).length) + ' / ' + R.length, sub: 'Agent 4 · 서버 2', c: '#E6EAF0' }
+    ];
+    const F = [['open', '열림'], ['closed', '종결'], ['all', '전체']];
+    const filters = F.map(([k, l]) => ({ label: l, pressed: k === filt ? 'true' : 'false', pick: () => this.setState({ filt: k }), bg: k === filt ? '#4C9AFF' : '#0E1116', fg: k === filt ? '#0E1116' : '#C9D1D9' }));
+    return {
+      tabs, kpis, filters, incs, c, notes: nl, draft, rules,
+      typeDraft: (e) => this.setState({ draft: e.target.value }),
+      addNote: () => { const d = (this.state.draft || '').trim(); if (!d) return; this.setState({ notes: { ...this.state.notes, [this.state.sel]: (this.state.notes[this.state.sel] || []).concat([{ meta: '나 · 방금', t: d }]) }, draft: '' }); },
+      toInvest: setSt('조사 중'), toDone: setSt('종결 · 대응 완료'), toFalse: setSt('종결 · 오탐')
+    };
+  }
+}
+</script>
+</body>
+</html>

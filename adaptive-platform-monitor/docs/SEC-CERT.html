@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security 인증서와 키</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.btn:disabled{color:#8B95A3;cursor:default}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C;white-space:nowrap}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #1E252F;font-size:13px}
+.rowbtn{background:none;border:0;padding:0;color:#8AB8FF;font:inherit;font-size:12px;cursor:pointer;min-height:32px}
+</style>
+<script src="./runtime.js"></script>
+</head>
+<body>
+<script type="text/x-dc-template" id="dc-template">
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22">
+<a href="Main.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div class="muted" style="font-size: 12px">Security / SEC-05</div>
+<h1 style="margin: 0; font-size: 18px">인증서 · 키</h1>
+</div>
+<span class="muted" style="font-size: 12px">기준일 2026-11-10 · 경고 45일, 위험 7일</span>
+</header>
+<nav aria-label="Security 메뉴" style="display: flex; gap: 2px; padding: 0 24px; background: #161B22; border-bottom: 1px solid #2A313C; overflow-x: auto">
+<sc-for list="{{tabs}}" as="b" hint-placeholder-count="8"><a href="{{b.href}}" style="padding: 12px 14px; white-space: nowrap; text-decoration: none; font-size: 13px; color: {{b.fg}}; border-bottom: 2px solid {{b.line}}">{{b.label}}</a></sc-for>
+</nav>
+
+<div style="padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<div class="card" style="padding: 14px"><div class="muted" style="font-size: 12px">{{k.label}}</div><div class="mono" style="font-size: 24px; font-weight: 500; color: {{k.c}}">{{k.v}}</div><div class="muted" style="font-size: 12px">{{k.sub}}</div></div>
+</sc-for>
+</div>
+
+<section class="card" aria-labelledby="tl-t">
+<h2 id="tl-t" class="h2">만료까지 남은 날 <span class="sub">0 ~ 400일, 400일 넘는 항목은 오른쪽 끝</span></h2>
+<div style="overflow-x: auto">
+<div style="min-width: 640px">
+<div style="display: flex; margin-left: 200px; position: relative; height: 18px">
+<sc-for list="{{ticks}}" as="k" hint-placeholder-count="5"><span class="mono" style="position: absolute; left: {{k.x}}; font-size: 10px; color: #8B95A3; transform: translateX(-50%)">{{k.l}}</span></sc-for>
+</div>
+<sc-for list="{{lanes}}" as="l" hint-placeholder-count="6">
+<div style="display: flex; align-items: center; height: 30px">
+<span style="width: 200px; flex: none; font-size: 12px; color: #C9D1D9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px">{{l.name}}</span>
+<div style="flex: 1; position: relative; height: 22px">
+<div style="position: absolute; left: 0; width: 1.75%; top: 0; bottom: 0; background: rgba(248,81,73,0.12)"></div>
+<div style="position: absolute; left: 1.75%; width: 9.5%; top: 0; bottom: 0; background: rgba(227,160,8,0.10)"></div>
+<div style="position: absolute; left: 0; right: 0; top: 11px; border-top: 1px solid #2A313C"></div>
+<div style="position: absolute; left: {{l.x}}; top: 4px; width: 14px; height: 14px; margin-left: -7px; transform: rotate(45deg); background: {{l.c}}"></div>
+<span class="mono" style="position: absolute; left: {{l.x}}; top: 2px; margin-left: 12px; font-size: 11px; color: {{l.c}}; white-space: nowrap">{{l.d}}</span>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" aria-labelledby="ct-t" style="flex: 3 1 560px">
+<h2 id="ct-t" class="h2">인증서</h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 760px">
+<thead><tr><th>이름 · 용도</th><th>발급자</th><th>알고리즘</th><th>저장 위치</th><th>만료일</th><th style="text-align: right">남은 날</th><th>상태</th><th></th></tr></thead>
+<tbody>
+<sc-for list="{{certs}}" as="c" hint-placeholder-count="6">
+<tr style="background: {{c.rowBg}}"><td><div style="font-weight: 500">{{c.name}}</div><div class="muted" style="font-size: 12px">{{c.use}}</div></td><td style="font-size: 12px; color: #C9D1D9">{{c.issuer}}</td><td class="mono" style="font-size: 12px">{{c.alg}}</td><td style="font-size: 12px">{{c.store}}</td><td class="mono" style="font-size: 12px">{{c.exp}}</td><td class="mono" style="font-size: 12px; text-align: right; color: {{c.dc}}">{{c.dd}}</td><td><span class="chip" style="color: {{c.sFg}}; background: {{c.sBg}}">{{c.st}}</span></td><td><button type="button" class="rowbtn" onClick="{{c.pick}}">{{c.pickLabel}}</button></td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<aside class="card" aria-labelledby="cd-t" style="flex: 2 1 360px">
+<h2 id="cd-t" class="h2">{{cur.name}}</h2>
+<div class="muted" style="font-size: 12px; margin-bottom: 6px">인증서 체인</div>
+<div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px">
+<sc-for list="{{chain}}" as="h" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; border: 1px solid {{h.bd}}; background: #0E1116; margin-left: {{h.ml}}"><span style="font-size: 12px; flex: 1">{{h.n}}</span><span class="mono muted" style="font-size: 11px">{{h.v}}</span></div>
+</sc-for>
+</div>
+<sc-for list="{{fields}}" as="f" hint-placeholder-count="5"><div class="kv"><span class="muted">{{f.k}}</span><span class="mono" style="text-align: right; word-break: break-all; font-size: 12px">{{f.v}}</span></div></sc-for>
+<div class="muted" style="font-size: 12px; margin: 14px 0 6px">교체 절차</div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; padding: 5px 0"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: {{s.bg}}; color: {{s.fg}}; font-size: 11px; display: flex; align-items: center; justify-content: center" class="mono">{{s.n}}</span><div><div style="font-size: 13px; color: {{s.tc}}">{{s.t}}</div><div class="muted" style="font-size: 11px">{{s.d}}</div></div></div>
+</sc-for>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px">
+<button type="button" class="btn" onClick="{{advance}}" disabled="{{advDisabled}}">{{advLabel}}</button>
+<button type="button" class="btn" onClick="{{resetStep}}">처음부터</button>
+</div>
+</aside>
+</div>
+
+<section class="card" aria-labelledby="ky-t">
+<h2 id="ky-t" class="h2">키 (메타데이터만) <span class="sub">키 값은 HSM·TEE 밖으로 나오지 않습니다</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 720px">
+<thead><tr><th>키 ID</th><th>알고리즘</th><th>저장 위치</th><th>용도</th><th>생성</th><th>교체 주기</th><th style="text-align: right">다음 교체</th></tr></thead>
+<tbody>
+<sc-for list="{{keys}}" as="k" hint-placeholder-count="6">
+<tr><td class="mono" style="font-size: 12px">{{k.id}}</td><td class="mono" style="font-size: 12px">{{k.alg}}</td><td style="font-size: 12px">{{k.slot}}</td><td style="font-size: 12px; color: #C9D1D9">{{k.use}}</td><td class="mono" style="font-size: 12px; color: #9AA4B2">{{k.made}}</td><td style="font-size: 12px">{{k.cycle}}</td><td class="mono" style="font-size: 12px; text-align: right; color: {{k.c}}">{{k.next}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+</div>
+</div>
+</script>
+<script>
+window.__DC_PROPS = {"$preview":{"width":1440,"height":1500}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 'c1', step: { c1: 1 } };
+  }
+  renderVals() {
+    const { sel, step } = this.state;
+    const ME = 'SEC-CERT';
+    const TABS = [['SEC', '개요'], ['SEC-IAM', '접근 거부'], ['SEC-PERM', '권한 매트릭스'], ['SEC-SECOC', 'SecOC'], ['SEC-BOOT', 'Secure Boot'], ['SEC-CERT', '인증서·키'], ['SEC-IDS', 'IDS 사건'], ['SEC-AUDIT', '감사 로그']];
+    const tabs = TABS.map(([f, l]) => ({ href: f === ME ? '#' : f + '.html', label: l, fg: f === ME ? '#E6EAF0' : '#9AA4B2', line: f === ME ? '#4C9AFF' : 'transparent' }));
+    const C = [
+      { id: 'c1', name: 'ECU 장치 인증서', use: '클라우드 TLS 연결', cn: 'ADCU-01', issuer: 'OEM Device CA G2', alg: 'ECDSA P-256', store: 'HSM 슬롯 3', exp: '2026-12-18', d: 38, serial: '4F:1A:9C:03:7E', fp: '8C2E…41D7', ku: 'digitalSignature, keyAgreement', root: 'OEM Root CA' },
+      { id: 'c2', name: '모니터 Agent 인증서', use: '모니터 서버 mTLS (SEC-S03)', cn: 'ap-monitor-agent.ADCU-01', issuer: 'Monitor CA', alg: 'ECDSA P-256', store: 'TEE 보관소', exp: '2027-01-13', d: 64, serial: '11:B0:62:9D:44', fp: '2A9F…E013', ku: 'digitalSignature', root: 'Monitor Root CA' },
+      { id: 'c5', name: '진단 인증서', use: 'UDS 보안 접근', cn: 'ADCU-01-diag', issuer: 'OEM Diag CA', alg: 'ECDSA P-256', store: 'HSM 슬롯 5', exp: '2027-02-28', d: 110, serial: '6C:21:0F:B8:93', fp: 'D4A1…7B2C', ku: 'digitalSignature', root: 'OEM Root CA' },
+      { id: 'c3', name: 'SOME/IP TLS 서버 인증서', use: 'ObjectList 채널 보호', cn: 'perception.adcu01.local', issuer: 'OEM Device CA G2', alg: 'ECDSA P-256', store: 'HSM 슬롯 7', exp: '2027-05-02', d: 173, serial: '3D:8E:51:0A:C2', fp: '7710…9AF4', ku: 'digitalSignature, keyAgreement', root: 'OEM Root CA' },
+      { id: 'c4', name: 'OTA 서명 검증 루트', use: '업데이트 패키지 검증 (신뢰 앵커)', cn: 'OEM OTA Root', issuer: '자체 서명', alg: 'RSA-4096', store: '읽기 전용 파티션', exp: '2029-05-10', d: 912, serial: '01', fp: 'B90C…11E8', ku: 'keyCertSign', root: '—' },
+      { id: 'c6', name: 'OEM Device CA G2', use: '장치 인증서 중간 CA', cn: 'OEM Device CA G2', issuer: 'OEM Root CA', alg: 'ECDSA P-384', store: '읽기 전용 파티션', exp: '2030-11-10', d: 1461, serial: '0A', fp: '5E37…C0A9', ku: 'keyCertSign, cRLSign', root: 'OEM Root CA' }
+    ];
+    const tone = (d) => d <= 7 ? ['#F85149', 'rgba(248,81,73,0.14)', '위험'] : (d <= 45 ? ['#E3A008', 'rgba(227,160,8,0.14)', '경고'] : ['#3FB950', 'rgba(63,185,80,0.14)', '정상']);
+    const certs = C.map(c => {
+      const t = tone(c.d); const inProg = (step[c.id] || 0) > 0 && (step[c.id] || 0) < 5;
+      return { ...c, dd: 'D-' + c.d, dc: t[0], sFg: inProg ? '#4C9AFF' : t[0], sBg: inProg ? 'rgba(76,154,255,0.14)' : t[1], st: inProg ? '교체 진행 중' : ((step[c.id] || 0) >= 5 ? '교체 완료' : t[2]),
+        rowBg: c.id === sel ? 'rgba(76,154,255,0.10)' : 'transparent', pickLabel: c.id === sel ? '선택됨' : '상세', pick: () => this.setState({ sel: c.id }) };
+    });
+    const lanes = C.map(c => ({ name: c.name, x: Math.min(98, c.d / 400 * 100) + '%', c: tone(c.d)[0], d: c.d > 400 ? 'D-' + c.d + ' →' : 'D-' + c.d }));
+    const ticks = [0, 100, 200, 300, 400].map(v => ({ x: (v / 400 * 100) + '%', l: v + '일' }));
+    const cur = C.find(c => c.id === sel);
+    const chain = cur.root === '—' ? [{ n: cur.cn + ' (자체 서명 루트)', v: '~ ' + cur.exp, bd: '#4C9AFF', ml: '0px' }] : [
+      { n: cur.root, v: '~ 2036-03-31', bd: '#2A313C', ml: '0px' },
+      ...(cur.issuer !== cur.root ? [{ n: cur.issuer, v: cur.issuer === 'OEM Device CA G2' ? '~ 2030-11-10' : '~ 2031-06-30', bd: '#2A313C', ml: '16px' }] : []),
+      { n: cur.cn, v: '~ ' + cur.exp, bd: '#4C9AFF', ml: cur.issuer !== cur.root ? '32px' : '16px' }
+    ];
+    const fields = [
+      { k: '주체 CN', v: cur.cn }, { k: '일련번호', v: cur.serial }, { k: 'SHA-256 지문', v: cur.fp }, { k: '키 용도', v: cur.ku }, { k: '저장 위치', v: cur.store }
+    ];
+    const S = [
+      ['CSR 생성', 'HSM 안에서 새 키 쌍 생성, 개인키는 밖으로 나오지 않음'],
+      ['PKI 서명 요청', '발급 CA에 CSR 제출 · 승인 대기'],
+      ['새 인증서 배포', 'OTA 경로로 ECU에 설치 (구 인증서와 병행)'],
+      ['연결 검증', '새 인증서로 TLS 연결 성공 확인'],
+      ['구 인증서 폐기', '구 인증서 비활성화 · 폐기 목록 등록']
+    ];
+    const cs = step[sel] || 0;
+    const steps = S.map((s, i) => {
+      const done = i < cs, now = i === cs && cs < 5;
+      return { n: done ? '✓' : String(i + 1), t: s[0], d: s[1], bg: done ? '#3FB950' : (now ? '#4C9AFF' : '#2A313C'), fg: done || now ? '#0E1116' : '#9AA4B2', tc: done ? '#C9D1D9' : (now ? '#E6EAF0' : '#8B95A3') };
+    });
+    const keys = [
+      { id: 'k-dev-03', alg: 'ECDSA P-256', slot: 'HSM 슬롯 3', use: 'ECU 장치 인증서', made: '2025-12-18', cycle: '1년', next: 'D-38', c: '#E3A008' },
+      { id: 'k-mon-01', alg: 'ECDSA P-256', slot: 'TEE', use: '모니터 Agent mTLS', made: '2026-01-13', cycle: '1년', next: 'D-64', c: '#E6EAF0' },
+      { id: 'k-vs-03', alg: 'AES-128', slot: 'HSM 슬롯 12', use: 'SecOC VehicleState', made: '2026-08-14', cycle: '6개월', next: 'D-120', c: '#E6EAF0' },
+      { id: 'k-st-01', alg: 'AES-128', slot: 'HSM 슬롯 14', use: 'SecOC SteerCmd', made: '2026-05-24', cycle: '6개월', next: 'D-14', c: '#E3A008' },
+      { id: 'k-bk-01', alg: 'AES-128', slot: 'HSM 슬롯 13', use: 'SecOC BrakeCmd', made: '2026-06-30', cycle: '6개월', next: 'D-51', c: '#E6EAF0' },
+      { id: 'k-diag-02', alg: 'ECDSA P-256', slot: 'HSM 슬롯 5', use: '진단 인증서', made: '2026-02-28', cycle: '1년', next: 'D-110', c: '#E6EAF0' }
+    ];
+    const soon = C.filter(c => c.d <= 45).length;
+    const prog = Object.keys(step).filter(k => step[k] > 0 && step[k] < 5).length;
+    const kpis = [
+      { label: '인증서', v: String(C.length), sub: '장치·서비스·신뢰 앵커', c: '#E6EAF0' },
+      { label: '45일 안에 만료', v: String(soon), sub: 'ECU 장치 인증서 D-38', c: soon ? '#E3A008' : '#E6EAF0' },
+      { label: '교체 진행 중', v: String(prog), sub: '단계별 진행 상황은 오른쪽', c: '#4C9AFF' },
+      { label: '키', v: String(keys.length), sub: '가장 빠른 교체 D-14', c: '#E6EAF0' }
+    ];
+    return {
+      tabs, kpis, lanes, ticks, certs, cur, chain, fields, steps, keys,
+      advance: () => this.setState({ step: { ...this.state.step, [this.state.sel]: Math.min(5, (this.state.step[this.state.sel] || 0) + 1) } }),
+      resetStep: () => this.setState({ step: { ...this.state.step, [this.state.sel]: 0 } }),
+      advDisabled: cs >= 5, advLabel: cs >= 5 ? '교체 완료' : (cs === 0 ? '교체 절차 시작' : '다음 단계 진행 (시뮬레이션)')
+    };
+  }
+}
+window.__DC_Component = Component;
+</script>
+</body>
+</html>

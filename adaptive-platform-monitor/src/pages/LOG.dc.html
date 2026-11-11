@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>LOG 로그 트레이스</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#8AB8FF;border:1px solid #2A4A75;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.sel{background:#0E1116;color:#E6EAF0;border:1px solid #2A313C;border-radius:6px;padding:6px 8px;font:inherit;font-size:12px;min-height:36px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<a href="Main.dc.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; background: #1E252F; color: #C9D1D9; border-radius: 4px; padding: 2px 6px">LOG</span><h1 style="margin: 0; font-size: 18px">로그 · 트레이스</h1></div>
+<div class="muted" style="font-size: 12px">DLT 실시간 스트림 · 원격 로그 레벨 · 서비스 호출 구간 트레이스</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span class="mono" style="font-size: 12px; color: #9AA4B2">시뮬레이션 T+{{t}}s</span>
+<button type="button" class="btn" onClick="{{toggle}}">{{runLabel}}</button>
+<sc-for list="{{scenarios}}" as="s" hint-placeholder-count="2"><button type="button" class="btn" onClick="{{s.run}}" style="background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for>
+<button type="button" class="btn" onClick="{{reset}}">초기화</button>
+</div>
+</header>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 40px">
+<aside style="flex: 1 1 300px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section class="card" aria-labelledby="sc-t">
+<h2 id="sc-t" class="h2">시나리오 진행</h2>
+<sc-if value="{{noSc}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">상단 시나리오 버튼을 누르면 단계별로 진행됩니다. 로그는 1초마다 새로 들어옵니다.</div></sc-if>
+<sc-if value="{{hasSc}}" hint-placeholder-val="{{false}}">
+<div style="font-size: 13px; font-weight: 500; margin-bottom: 6px">{{scTitle}}</div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; padding: 6px 0"><span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: {{s.dot}}; margin-top: 5px"></span><div><div style="font-size: 13px; color: {{s.fg}}">{{s.text}}</div><div class="mono" style="font-size: 11px; color: #8B95A3">{{s.at}} · {{s.tag}}</div></div></div>
+</sc-for>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="spec-t">
+<h2 id="spec-t" class="h2">기능 명세 <span class="sub">{{specCount}}개</span></h2>
+<sc-for list="{{spec}}" as="f" hint-placeholder-count="8">
+<div style="padding: 9px 0; border-bottom: 1px solid #1E252F">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; color: #8AB8FF">{{f.id}}</span><span style="font-size: 13px; font-weight: 500; flex: 1">{{f.name}}</span><span style="font-size: 10px; color: {{f.pc}}; border: 1px solid {{f.pc}}; border-radius: 10px; padding: 0 6px; white-space: nowrap">{{f.ph}}</span></div>
+<div class="muted" style="font-size: 12px; margin-top: 2px">{{f.desc}}</div>
+</div>
+</sc-for>
+</section>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<section class="card" aria-labelledby="ls-t">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px">
+<h2 id="ls-t" class="h2" style="margin: 0">실시간 스트림 <span class="tag">LOG-01</span><span class="tag">LOG-02</span><span class="tag">LOG-07</span></h2>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+<sc-for list="{{levels}}" as="l" hint-placeholder-count="4"><button type="button" class="btn" aria-pressed="{{l.pressed}}" onClick="{{l.pick}}" style="min-height: 36px; padding: 0 12px; font-size: 12px; background: {{l.bg}}; color: {{l.fg}}">{{l.label}}</button></sc-for>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9AA4B2">App<select class="sel"><option>전체</option><option>PERC</option><option>PLAN</option><option>AIIN</option><option>EM</option></select></label>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9AA4B2">검색<input type="text" placeholder="메시지 검색" class="sel" style="width: 140px"></label>
+<button type="button" class="btn" style="min-height: 36px; font-size: 12px">DLT 내보내기</button>
+</div>
+</div>
+<div style="background: #0B0E12; border: 1px solid #1E252F; border-radius: 8px; overflow-x: auto">
+<div class="mono" style="min-width: 700px; font-size: 12px">
+<sc-for list="{{logs}}" as="g" hint-placeholder-count="12">
+<div style="display: flex; gap: 14px; padding: 5px 12px; border-bottom: 1px solid #161B22; background: {{g.rowBg}}">
+<span style="color: #8B95A3; width: 92px; flex: none">{{g.time}}</span>
+<span style="color: #C9D1D9; width: 44px; flex: none">{{g.app}}</span>
+<span style="color: #9AA4B2; width: 44px; flex: none">{{g.ctx}}</span>
+<span style="color: {{g.fg}}; width: 48px; flex: none; font-weight: 500">{{g.lvl}}</span>
+<span style="color: #E6EAF0; flex: 1">{{g.msg}}</span>
+</div>
+</sc-for>
+<sc-if value="{{noLogs}}" hint-placeholder-val="{{false}}"><div style="padding: 14px 12px; color: #9AA4B2">해당 레벨 로그가 아직 없습니다.</div></sc-if>
+</div>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<section class="card" aria-labelledby="rt-t" style="flex: 3 1 420px">
+<h2 id="rt-t" class="h2">초당 로그 건수 <span class="sub">최근 20초</span><span class="tag">LOG-06</span></h2>
+<div style="display: flex; align-items: flex-end; gap: 4px; height: 120px; border-bottom: 1px solid #2A313C">
+<sc-for list="{{rate}}" as="r" hint-placeholder-count="20">
+<div style="flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end">
+<div style="height: {{r.errH}}; background: #F85149"></div>
+<div style="height: {{r.okH}}; background: #4C9AFF; border-radius: 2px 2px 0 0"></div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: #9AA4B2"><span>-20s</span><span>현재 <b class="mono" style="color: {{rateNowC}}">{{rateNow}}</b> 건/s · 버퍼 <b class="mono" style="color: {{bufC}}">{{buf}}</b></span><span>지금</span></div>
+<div style="display: flex; gap: 14px; margin-top: 6px; font-size: 12px; color: #9AA4B2"><span><span style="display: inline-block; width: 10px; height: 10px; background: #4C9AFF; vertical-align: middle"></span> INFO·WARN</span><span><span style="display: inline-block; width: 10px; height: 10px; background: #F85149; vertical-align: middle"></span> ERROR</span></div>
+</section>
+<section class="card" aria-labelledby="al-t" style="flex: 2 1 280px">
+<h2 id="al-t" class="h2">알람 시점 점프 <span class="tag">LOG-04</span></h2>
+<sc-for list="{{jumps}}" as="j" hint-placeholder-count="3">
+<div style="padding: 8px 0; border-bottom: 1px solid #1E252F">
+<div style="font-size: 13px">{{j.msg}}</div>
+<div style="display: flex; justify-content: space-between; font-size: 12px"><span class="mono muted">{{j.time}}</span><a href="#">전후 10초 로그 보기</a></div>
+</div>
+</sc-for>
+</section>
+</div>
+
+<section class="card" aria-labelledby="tr-t">
+<h2 id="tr-t" class="h2">분산 트레이스 <span class="sub">카메라 프레임 → 제어 출력, 총 {{traceTotal}}</span><span class="tag">LOG-05</span></h2>
+<div style="overflow-x: auto">
+<div style="min-width: 620px">
+<sc-for list="{{spans}}" as="s" hint-placeholder-count="6">
+<div style="display: flex; align-items: center; height: 30px">
+<span class="mono" style="width: 200px; flex: none; font-size: 12px; color: #C9D1D9">{{s.name}}</span>
+<div style="flex: 1; position: relative; height: 16px">
+<div style="position: absolute; top: 0; height: 16px; border-radius: 3px; left: {{s.left}}; width: {{s.width}}; background: {{s.color}}"></div>
+<span class="mono" style="position: absolute; top: 0; font-size: 10px; color: #9AA4B2; left: {{s.lblLeft}}; padding-left: 6px; white-space: nowrap">{{s.dur}}</span>
+</div>
+</div>
+</sc-for>
+<div style="display: flex; margin-left: 200px; border-top: 1px solid #2A313C; padding-top: 4px">
+<sc-for list="{{traceTicks}}" as="k" hint-placeholder-count="7"><span class="mono" style="flex: 1; font-size: 10px; color: #8B95A3">{{k}}</span></sc-for>
+</div>
+</div>
+</div>
+<div class="muted" style="font-size: 12px; margin-top: 8px">예산 100ms 초과 구간은 빨간색으로 표시됩니다.</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<section class="card" aria-labelledby="lv-t" style="flex: 3 1 420px">
+<h2 id="lv-t" class="h2">앱별 로그 레벨 원격 변경 <span class="tag">LOG-03</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 460px">
+<thead><tr><th>App ID</th><th>프로세스</th><th style="text-align: right">Context</th><th>레벨</th></tr></thead>
+<tbody>
+<sc-for list="{{apps}}" as="a" hint-placeholder-count="5">
+<tr><td class="mono" style="font-size: 12px">{{a.id}}</td><td class="mono" style="font-size: 12px; color: #C9D1D9">{{a.proc}}</td><td class="mono" style="font-size: 12px; text-align: right">{{a.ctx}}</td><td><label style="font-size: 12px; color: #9AA4B2"><span style="position: absolute; left: -9999px">{{a.id}} 레벨</span><select class="sel"><option>{{a.lv}}</option><option>DEBUG</option><option>INFO</option><option>WARN</option><option>ERROR</option></select></label></td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+<section class="card" aria-labelledby="hl-t" style="flex: 2 1 280px">
+<h2 id="hl-t" class="h2">하이라이트 규칙 · 북마크 <span class="tag">LOG-08</span></h2>
+<sc-for list="{{rules}}" as="r" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #1E252F"><span style="width: 10px; height: 10px; border-radius: 2px; background: {{r.c}}"></span><span class="mono" style="font-size: 12px; flex: 1">{{r.p}}</span><span class="muted" style="font-size: 12px">{{r.n}}</span></div>
+</sc-for>
+</section>
+</div>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, running: true, sc: null, s0: 0, level: 'ALL' };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { if (this.state.running) this.setState({ t: this.state.t + 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, running, sc, s0, level } = this.state;
+    const el = sc ? t - s0 : -1;
+    const PH = { MVP: '#4C9AFF', '2단계': '#3FB9A8', '3단계': '#9AA4B2' };
+    const mkSteps = (L) => L.map((s, i) => { const n = L[i + 1]; const st = el < s.at ? 'p' : (n && el >= n.at ? 'd' : 'a'); const c = { d: ['#3FB950', '#C9D1D9', '완료'], a: ['#4C9AFF', '#E6EAF0', '진행 중'], p: ['#3A424E', '#8B95A3', '대기'] }[st]; return { at: '+' + s.at + 's', text: s.text, dot: c[0], fg: c[1], tag: c[2] }; });
+    const clock = (sec, ms) => { const b = 17 * 3600 + 30 * 60 + sec; return [Math.floor(b / 3600), Math.floor(b / 60) % 60, b % 60].map(x => String(x).padStart(2, '0')).join(':') + '.' + String(ms).padStart(3, '0'); };
+
+    const SC = {
+      burst: { label: '로그 폭주 감지', steps: [
+        { at: 0, text: 'ai_infer_svc가 같은 오류 로그를 반복 출력' },
+        { at: 2, text: '초당 300건 초과 → 폭주 경고' },
+        { at: 3, text: 'DLT 버퍼 사용률 85% 도달' },
+        { at: 5, text: 'AIIN 레이트 리밋 적용 (10건/s)' },
+        { at: 7, text: '로그량 안정화' }
+      ]},
+      trace: { label: 'E2E 지연 추적', steps: [
+        { at: 0, text: '카메라 프레임 #48211 트레이스 시작' },
+        { at: 1, text: 'perception 추론 구간 38ms → 72ms 증가' },
+        { at: 3, text: 'planning 입력 대기 발생, 전체 100ms 예산 초과' },
+        { at: 5, text: '원인: ai_infer_svc NPU 대기열 → 알람 연계' }
+      ]}
+    };
+    const burstOn = (e) => sc === 'burst' && e >= 0 && e < 7;
+    const N = [
+      ['PERC', 'DET', 'INFO', 'frame processed, 12 objects, 38ms'],
+      ['PLAN', 'MAIN', 'INFO', 'trajectory published, horizon 4.0s'],
+      ['CTRL', 'LOOP', 'INFO', 'cycle 10ms, jitter 0.3ms'],
+      ['COM', 'SD', 'INFO', 'OfferService ObjectList 0x1001:1'],
+      ['PLAN', 'TIME', 'WARN', 'cycle overrun 21.4ms > budget 20ms'],
+      ['PER', 'KVS', 'INFO', 'flush 3 keys (planning.cfg)'],
+      ['AIIN', 'NPU', 'INFO', 'batch 4 done, 11.2ms'],
+      ['EM', 'PROC', 'INFO', 'health report ok (42 processes)']
+    ];
+    const B = ['AIIN', 'NPU', 'ERROR', 'inference failed: tensor alloc -12 (ENOMEM)'];
+    const all = [];
+    for (let k = t; k >= Math.max(0, t - 8); k--) {
+      const e = sc ? k - s0 : -1;
+      for (let j = 1; j >= 0; j--) {
+        const idx = k * 2 + j;
+        let row = N[idx % N.length];
+        if (burstOn(e) && (e < 5 || j === 0)) row = B;
+        if (sc === 'trace' && e >= 1 && j === 1 && row[0] === 'PERC') row = ['PERC', 'DET', 'WARN', 'frame processed, 12 objects, 72ms (> 50ms)'];
+        all.push({ time: clock(k, (idx * 137) % 1000), app: row[0], ctx: row[1], lvl: row[2], msg: row[3] });
+      }
+    }
+    const lc = { ERROR: '#F85149', WARN: '#E3A008', INFO: '#4C9AFF' };
+    const logs = all.filter(g => level === 'ALL' || g.lvl === level).slice(0, 12).map(g => ({ ...g, fg: lc[g.lvl], rowBg: g.lvl === 'ERROR' ? 'rgba(248,81,73,0.06)' : 'transparent' }));
+    const levels = ['ALL', 'ERROR', 'WARN', 'INFO'].map(l => ({ label: l === 'ALL' ? '전체' : l, pressed: l === level ? 'true' : 'false', pick: () => this.setState({ level: l }), bg: l === level ? '#4C9AFF' : '#0E1116', fg: l === level ? '#0E1116' : '#C9D1D9' }));
+
+    const rateArr = [];
+    for (let k = t - 19; k <= t; k++) {
+      const e = sc ? k - s0 : -1;
+      let tot = 40 + 8 * Math.sin(k * 0.7), err = 0;
+      if (k < 0) { tot = 0; }
+      else if (burstOn(e)) { tot = e < 5 ? 320 + 20 * Math.sin(k) : 90; err = e < 5 ? 280 : 10; }
+      rateArr.push({ tot, err });
+    }
+    const rate = rateArr.map(r => ({ errH: (r.err / 360 * 100) + '%', okH: ((r.tot - r.err) / 360 * 100) + '%' }));
+    const nowTot = Math.round(rateArr[19].tot);
+    const bufPct = sc === 'burst' && el >= 3 && el < 6 ? 85 : (sc === 'burst' && el >= 2 && el < 7 ? 64 : 22);
+
+    let perc = 38, planWait = 0;
+    if (sc === 'trace' && el >= 1) perc = 72;
+    if (sc === 'trace' && el >= 3) planWait = 20;
+    const S = [['camera_drv · capture', 2], ['perception · detect', perc], ['com · ObjectList publish', 4], ['planning · 입력 대기', planWait], ['planning · compute', 18], ['com · Trajectory (shm)', 1], ['control · actuate', 3]];
+    let cur = 0; const total = S.reduce((a, s) => a + s[1], 0); const scale = 140;
+    const spans = S.filter(s => s[1] > 0).map(s => { const st = cur; cur += s[1]; return { name: s[0], left: (st / scale * 100) + '%', width: (s[1] / scale * 100) + '%', lblLeft: (cur / scale * 100) + '%', dur: s[1] + 'ms', color: cur > 100 ? '#F85149' : (s[1] >= 50 ? '#E3A008' : '#4C9AFF') }; });
+
+    const jumps = [
+      { time: '17:29:41', msg: 'ai_infer_svc Alive 감시 실패' },
+      { time: '17:27:12', msg: 'planning_app Deadline 초과' },
+      { time: '17:05:55', msg: '/var/persist 사용량 85% 초과' }
+    ];
+    const apps = [
+      { id: 'PERC', proc: 'perception_app', ctx: '6', lv: 'INFO' },
+      { id: 'PLAN', proc: 'planning_app', ctx: '4', lv: 'INFO' },
+      { id: 'CTRL', proc: 'control_app', ctx: '3', lv: 'WARN' },
+      { id: 'AIIN', proc: 'ai_infer_svc', ctx: '5', lv: sc === 'burst' && el >= 5 ? 'ERROR (제한 10/s)' : 'INFO' },
+      { id: 'EM', proc: 'em_daemon', ctx: '2', lv: 'INFO' }
+    ];
+    const rules = [
+      { p: 'ENOMEM|alloc', c: '#F85149', n: '오늘 284건' },
+      { p: 'overrun', c: '#E3A008', n: '오늘 37건' },
+      { p: 'StopOffer', c: '#4C9AFF', n: '북마크 2' }
+    ];
+
+    const spec = [
+      ['LOG-01', 'DLT 실시간 스트림', 'dlt-daemon 수신, ECU·App·Context·레벨 표시, 일시정지', 'MVP'],
+      ['LOG-02', '필터·검색', '레벨, App ID, Context ID, 정규식 검색', 'MVP'],
+      ['LOG-03', '원격 로그 레벨', '앱·Context별 레벨 변경, 레이트 리밋 설정', '2단계'],
+      ['LOG-04', '알람 시점 점프', '알람 발생 시점 전후 N초 로그로 바로 이동', '2단계'],
+      ['LOG-05', '분산 트레이스', '프레임·요청 ID 기준 구간별 지연 워터폴', '3단계'],
+      ['LOG-06', '로그 통계', '초당 건수, 레벨별 비율, 폭주·버퍼 경고', '2단계'],
+      ['LOG-07', '내보내기', 'DLT 원본, CSV, 선택 구간만 저장', 'MVP'],
+      ['LOG-08', '하이라이트·북마크', '패턴별 색상 규칙, 중요 줄 북마크', '3단계']
+    ].map(s => ({ id: s[0], name: s[1], desc: s[2], ph: s[3], pc: PH[s[3]] }));
+
+    const scenarios = Object.keys(SC).map(k => ({ label: SC[k].label, run: () => this.setState({ sc: k, s0: this.state.t, running: true }), bg: sc === k ? '#4C9AFF' : '#0E1116', fg: sc === k ? '#0E1116' : '#E6EAF0' }));
+    return {
+      t, runLabel: running ? '일시정지' : '재생', toggle: () => this.setState({ running: !this.state.running }),
+      reset: () => this.setState({ t: 0, sc: null, s0: 0, running: true }),
+      scenarios, noSc: !sc, hasSc: !!sc, scTitle: sc ? SC[sc].label : '', steps: sc ? mkSteps(SC[sc].steps) : [],
+      spec, specCount: spec.length, logs, noLogs: logs.length === 0, levels,
+      rate, rateNow: String(nowTot), rateNowC: nowTot > 300 ? '#F85149' : '#E6EAF0', buf: bufPct + '%', bufC: bufPct >= 80 ? '#F85149' : (bufPct >= 60 ? '#E3A008' : '#E6EAF0'),
+      spans, traceTotal: total + 'ms', traceTicks: ['0', '20', '40', '60', '80', '100', '120ms'], jumps, apps, rules
+    };
+  }
+}
+</script>
+</body>
+</html>

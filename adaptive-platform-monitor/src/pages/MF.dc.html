@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>MF Manifest 구성</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#8AB8FF;border:1px solid #2A4A75;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<a href="Main.dc.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; background: #1E252F; color: #C9D1D9; border-radius: 4px; padding: 2px 6px">MF</span><h1 style="margin: 0; font-size: 18px">Manifest · 구성</h1></div>
+<div class="muted" style="font-size: 12px">배포 Manifest 조회 · 저장소 diff · 스키마 검증 · OS/칩 프로파일 · 실행 일치 검사</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span class="mono" style="font-size: 12px; color: #9AA4B2">시뮬레이션 T+{{t}}s</span>
+<button type="button" class="btn" onClick="{{toggle}}">{{runLabel}}</button>
+<sc-for list="{{scenarios}}" as="s" hint-placeholder-count="2"><button type="button" class="btn" onClick="{{s.run}}" style="background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for>
+<button type="button" class="btn" onClick="{{reset}}">초기화</button>
+</div>
+</header>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 40px">
+<aside style="flex: 1 1 300px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section class="card" aria-labelledby="sc-t">
+<h2 id="sc-t" class="h2">시나리오 진행</h2>
+<sc-if value="{{noSc}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">상단 시나리오 버튼을 누르면 단계별로 진행됩니다. 지금은 ai_infer_svc에 미배포 변경 1건이 있습니다.</div></sc-if>
+<sc-if value="{{hasSc}}" hint-placeholder-val="{{false}}">
+<div style="font-size: 13px; font-weight: 500; margin-bottom: 6px">{{scTitle}}</div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; padding: 6px 0"><span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: {{s.dot}}; margin-top: 5px"></span><div><div style="font-size: 13px; color: {{s.fg}}">{{s.text}}</div><div class="mono" style="font-size: 11px; color: #8B95A3">{{s.at}} · {{s.tag}}</div></div></div>
+</sc-for>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="spec-t">
+<h2 id="spec-t" class="h2">기능 명세 <span class="sub">{{specCount}}개</span></h2>
+<sc-for list="{{spec}}" as="f" hint-placeholder-count="6">
+<div style="padding: 9px 0; border-bottom: 1px solid #1E252F">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; color: #8AB8FF">{{f.id}}</span><span style="font-size: 13px; font-weight: 500; flex: 1">{{f.name}}</span><span style="font-size: 10px; color: {{f.pc}}; border: 1px solid {{f.pc}}; border-radius: 10px; padding: 0 6px; white-space: nowrap">{{f.ph}}</span></div>
+<div class="muted" style="font-size: 12px; margin-top: 2px">{{f.desc}}</div>
+</div>
+</sc-for>
+</section>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<section class="card" aria-labelledby="pl-t">
+<h2 id="pl-t" class="h2">배포 파이프라인 <span class="tag">MF-05</span></h2>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<sc-for list="{{pipe}}" as="p" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; gap: 8px"><div style="min-width: 110px; padding: 8px 12px; border-radius: 6px; border: 1px solid {{p.b}}; background: {{p.bg}}; text-align: center"><div style="font-size: 12px; font-weight: 500">{{p.name}}</div><div class="mono" style="font-size: 10px; color: {{p.fg}}">{{p.st}}</div></div><sc-if value="{{p.arrow}}" hint-placeholder-val="{{true}}"><span aria-hidden="true" style="color: #5A6472">→</span></sc-if></div>
+</sc-for>
+</div>
+</section>
+
+<section class="card" aria-labelledby="fl-t">
+<h2 id="fl-t" class="h2">배포된 Manifest <span class="sub">Machine 1 · Execution 18 · Service Instance 12 중 일부</span><span class="tag">MF-01</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 680px">
+<thead><tr><th>파일</th><th>종류</th><th>배포 해시</th><th>저장소 해시</th><th>상태</th></tr></thead>
+<tbody>
+<sc-for list="{{files}}" as="f" hint-placeholder-count="6">
+<tr><td class="mono" style="font-size: 12px">{{f.name}}</td><td style="font-size: 12px; color: #C9D1D9">{{f.kind}}</td><td class="mono" style="font-size: 12px; color: #9AA4B2">{{f.dep}}</td><td class="mono" style="font-size: 12px; color: #9AA4B2">{{f.repo}}</td><td><span class="chip" style="color: {{f.fg}}; background: {{f.bg}}">{{f.st}}</span></td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<section class="card" aria-labelledby="df-t" style="flex: 3 1 420px">
+<h2 id="df-t" class="h2">저장소 대비 diff <span class="sub">ai_infer_svc.exec.json</span><span class="tag">MF-02</span></h2>
+<sc-if value="{{noDiff}}" hint-placeholder-val="{{false}}"><div class="muted" style="font-size: 13px; padding: 12px; background: #0B0E12; border-radius: 8px">변경 없음 — 배포본과 저장소가 일치합니다.</div></sc-if>
+<sc-if value="{{hasDiff}}" hint-placeholder-val="{{true}}">
+<div class="mono" style="background: #0B0E12; border: 1px solid #1E252F; border-radius: 8px; font-size: 12px; overflow-x: auto">
+<sc-for list="{{diff}}" as="d" hint-placeholder-count="8">
+<div style="display: flex; gap: 10px; padding: 3px 12px; background: {{d.bg}}; white-space: pre"><span style="width: 12px; color: {{d.mc}}">{{d.m}}</span><span style="color: {{d.fg}}">{{d.text}}</span></div>
+</sc-for>
+</div>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="va-t" style="flex: 2 1 280px">
+<h2 id="va-t" class="h2">스키마 검증 <span class="tag">MF-03</span></h2>
+<sc-for list="{{valid}}" as="v" hint-placeholder-count="4">
+<div style="display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1E252F"><span style="flex: none; font-size: 10px; font-weight: 700; color: {{v.fg}}; background: {{v.bg}}; border-radius: 4px; padding: 2px 6px; align-self: flex-start; margin-top: 2px">{{v.k}}</span><div style="font-size: 13px">{{v.msg}}</div></div>
+</sc-for>
+</section>
+</div>
+
+<section class="card" aria-labelledby="pr-t">
+<h2 id="pr-t" class="h2">OS · 칩 프로파일 비교 <span class="tag">MF-04</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 640px">
+<thead><tr><th>설정</th><th>Linux · Qualcomm</th><th>QNX · NXP</th><th>Linux · TI</th></tr></thead>
+<tbody>
+<sc-for list="{{prof}}" as="p" hint-placeholder-count="5">
+<tr><td style="font-size: 12px; color: #C9D1D9">{{p.k}}</td><td class="mono" style="font-size: 12px">{{p.a}}</td><td class="mono" style="font-size: 12px; color: {{p.bc}}">{{p.b}}</td><td class="mono" style="font-size: 12px; color: {{p.cc}}">{{p.c}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<div class="muted" style="font-size: 12px; margin-top: 8px">기준(Linux · Qualcomm)과 다른 값은 파란색 — 코드 변경 없이 설정만 다른 부분입니다.</div>
+</section>
+
+<section class="card" aria-labelledby="rc-t">
+<h2 id="rc-t" class="h2">Manifest ↔ 실제 실행 일치 검사 <span class="tag">MF-06</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 600px">
+<thead><tr><th>프로세스</th><th>항목</th><th>Manifest</th><th>실제</th><th>결과</th></tr></thead>
+<tbody>
+<sc-for list="{{rt}}" as="r" hint-placeholder-count="5">
+<tr><td class="mono" style="font-size: 12px">{{r.p}}</td><td style="font-size: 12px; color: #C9D1D9">{{r.k}}</td><td class="mono" style="font-size: 12px">{{r.m}}</td><td class="mono" style="font-size: 12px">{{r.a}}</td><td><span class="chip" style="color: {{r.fg}}; background: {{r.bg}}">{{r.res}}</span></td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, running: true, sc: null, s0: 0 };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { if (this.state.running) this.setState({ t: this.state.t + 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, running, sc, s0 } = this.state;
+    const el = sc ? t - s0 : -1;
+    const T = { ok: ['#3FB950', 'rgba(63,185,80,0.14)'], warn: ['#E3A008', 'rgba(227,160,8,0.14)'], crit: ['#F85149', 'rgba(248,81,73,0.14)'], info: ['#4C9AFF', 'rgba(76,154,255,0.14)'], off: ['#9AA4B2', 'rgba(154,164,178,0.10)'] };
+    const tn = (k) => T[k] || T.off;
+    const PH = { MVP: '#4C9AFF', '2단계': '#3FB9A8', '3단계': '#9AA4B2' };
+    const mkSteps = (L) => L.map((s, i) => { const n = L[i + 1]; const st = el < s.at ? 'p' : (n && el >= n.at ? 'd' : 'a'); const c = { d: ['#3FB950', '#C9D1D9', '완료'], a: ['#4C9AFF', '#E6EAF0', '진행 중'], p: ['#3A424E', '#8B95A3', '대기'] }[st]; return { at: '+' + s.at + 's', text: s.text, dot: c[0], fg: c[1], tag: c[2] }; });
+    const SC = {
+      deploy: { label: 'Manifest 배포 (성공)', steps: [
+        { at: 0, text: '스키마 검증 통과 (변경 파일 1개)' },
+        { at: 1, text: '서명 · 패키징' },
+        { at: 2, text: 'ECU로 전송 (1.2 KB)' },
+        { at: 3, text: 'EM 재로딩: AI_Inference FG 재시작' },
+        { at: 5, text: '실행 일치 검사 통과 → diff 0건' }
+      ]},
+      fail: { label: '검증 실패 → 배포 차단', steps: [
+        { at: 0, text: '스키마 검증 시작' },
+        { at: 1, text: '오류: resourceGroup이 존재하지 않는 cgroup 참조' },
+        { at: 2, text: '경고: 서비스 인스턴스 ID 0x3001 중복' },
+        { at: 3, text: '배포 차단, 검증 리포트 생성' }
+      ]}
+    };
+    const dep = sc === 'deploy';
+    const fail = sc === 'fail';
+    const done = dep && el >= 5;
+    const stage = (i) => {
+      if (dep) { const at = [0, 1, 2, 3, 5][i]; if (el > at || (i === 4 && el >= 5)) return 'done'; if (el === at || (i === 3 && el === 4)) return 'run'; return 'wait'; }
+      if (fail) { if (i === 0) return el >= 1 ? 'fail' : 'run'; return el >= 3 ? 'skip' : 'wait'; }
+      return 'idle';
+    };
+    const SS = { done: ['완료', 'ok'], run: ['진행 중', 'info'], wait: ['대기', 'off'], fail: ['실패', 'crit'], skip: ['차단됨', 'off'], idle: ['—', 'off'] };
+    const pipe = ['스키마 검증', '서명·패키징', 'ECU 전송', 'EM 재로딩', '일치 검사'].map((n, i, a) => { const s = SS[stage(i)]; const on = s[1] !== 'off'; return { name: n, st: s[0], fg: tn(s[1])[0], b: on ? tn(s[1])[0] : '#2A313C', bg: on ? tn(s[1])[1] : '#0E1116', arrow: i < a.length - 1 }; });
+
+    const files = [
+      { name: 'machine.json', kind: 'Machine', dep: 'a41c…09e', repo: 'a41c…09e', k: 'same' },
+      { name: 'em_daemon.exec.json', kind: 'Execution', dep: '77b2…1fa', repo: '77b2…1fa', k: 'same' },
+      { name: 'perception_app.exec.json', kind: 'Execution', dep: 'c09d…a62', repo: 'c09d…a62', k: 'same' },
+      { name: 'ai_infer_svc.exec.json', kind: 'Execution', dep: done ? '5e31…bb0' : '19f0…c4d', repo: '5e31…bb0', k: done ? 'same' : 'diff' },
+      { name: 'ObjectList.svc.json', kind: 'Service Instance', dep: 'e6a2…7d1', repo: 'e6a2…7d1', k: 'same' },
+      { name: 'InferenceResult.svc.json', kind: 'Service Instance', dep: '3c8a…2e9', repo: '3c8a…2e9', k: fail && el >= 2 ? 'dup' : 'same' }
+    ].map(f => { const m = { same: ['일치', 'ok'], diff: ['변경됨 (미배포)', 'warn'], dup: ['ID 중복', 'warn'] }[f.k]; return { ...f, st: m[0], fg: tn(m[1])[0], bg: tn(m[1])[1] }; });
+
+    const badRG = fail && el >= 1;
+    const D = [
+      [' ', '{'],
+      [' ', '  "process": "ai_infer_svc",'],
+      ['-', '  "startupTimeoutMs": 3000,'],
+      ['+', '  "startupTimeoutMs": 6000,'],
+      ['-', '  "resourceGroup": "ai_inference.slice",'],
+      ['+', '  "resourceGroup": "ai_inference_v2.slice",', badRG],
+      [' ', '  "schedulingPolicy": "SCHED_OTHER",'],
+      ['+', '  "env": { "MODEL": "lane_det_v2.4" }'],
+      [' ', '}']
+    ];
+    const diff = D.map(d => ({
+      m: d[0] === ' ' ? '' : d[0], text: d[1] + (d[2] ? '   ← 오류: 정의되지 않은 cgroup' : ''),
+      mc: d[0] === '+' ? '#3FB950' : (d[0] === '-' ? '#F85149' : '#5A6472'),
+      fg: d[2] ? '#F85149' : '#E6EAF0',
+      bg: d[2] ? 'rgba(248,81,73,0.18)' : (d[0] === '+' ? 'rgba(63,185,80,0.10)' : (d[0] === '-' ? 'rgba(248,81,73,0.08)' : 'transparent'))
+    }));
+
+    let valid = [
+      { k: 'OK', msg: 'JSON 스키마 (AP manifest v3) 통과 — 31개 파일', kk: 'ok' },
+      { k: 'OK', msg: '프로세스 의존성 순환 없음', kk: 'ok' },
+      { k: 'INFO', msg: 'ai_infer_svc: 기동 타임아웃 3s → 6s 변경 예정', kk: 'info' }
+    ];
+    if (fail && el >= 1) valid.unshift({ k: 'ERROR', msg: 'ai_infer_svc.exec.json: resourceGroup "ai_inference_v2.slice" 미정의', kk: 'crit' });
+    if (fail && el >= 2) valid.splice(1, 0, { k: 'WARN', msg: '서비스 인스턴스 0x3001:1이 2개 파일에 정의됨', kk: 'warn' });
+    valid = valid.map(v => ({ ...v, fg: tn(v.kk)[0], bg: tn(v.kk)[1] }));
+
+    const P = [
+      ['IPC 바인딩', 'shm (POSIX)', 'shm (QNX typed mem)', 'shm (POSIX)'],
+      ['로그 출력', 'dlt-daemon', 'slog2 → DLT 브리지', 'dlt-daemon'],
+      ['RT 스케줄러', 'SCHED_FIFO', 'FIFO (QNX)', 'SCHED_FIFO'],
+      ['NN 런타임', 'QNN (Hexagon)', 'eIQ (Neutron)', 'TIDL (C7x)'],
+      ['영속성 경로', '/var/persist', '/persist', '/var/persist'],
+      ['Watchdog 드라이버', 'msm_watchdog', 'wdtkick', 'rti_wdt']
+    ];
+    const prof = P.map(p => ({ k: p[0], a: p[1], b: p[2], c: p[3], bc: p[2] !== p[1] ? '#8AB8FF' : '#E6EAF0', cc: p[3] !== p[1] ? '#8AB8FF' : '#E6EAF0' }));
+
+    const reload = dep && el >= 3 && el < 5;
+    const rt = [
+      { p: 'planning_app', k: '우선순위', m: '70', a: '70', res: '일치', kk: 'ok' },
+      { p: 'control_app', k: '코어 affinity', m: '1', a: '1', res: '일치', kk: 'ok' },
+      { p: 'perception_app', k: '메모리 한도', m: '1.5 GB', a: '1.5 GB', res: '일치', kk: 'ok' },
+      { p: 'ai_infer_svc', k: '기동 타임아웃', m: done ? '6000' : '3000', a: reload ? '검사 중' : (done ? '6000' : '3000'), res: reload ? '검사 중' : '일치', kk: reload ? 'info' : 'ok' },
+      { p: 'ai_infer_svc', k: '환경 변수 MODEL', m: done ? 'lane_det_v2.4' : '—', a: reload ? '검사 중' : (done ? 'lane_det_v2.4' : '—'), res: reload ? '검사 중' : '일치', kk: reload ? 'info' : 'ok' }
+    ].map(r => ({ ...r, fg: tn(r.kk)[0], bg: tn(r.kk)[1] }));
+
+    const spec = [
+      ['MF-01', '배포 Manifest 조회', 'Machine·Execution·Service Instance 파일, 배포 해시', 'MVP'],
+      ['MF-02', '저장소 대비 diff', 'Git 저장소와 배포본 비교, 줄 단위 변경 표시', 'MVP'],
+      ['MF-03', '스키마 검증', '형식, 참조 무결성, ID 중복, 의존성 순환 검사', '2단계'],
+      ['MF-04', 'OS·칩 프로파일 비교', 'Linux/QNX, Qualcomm/NXP/TI별 설정 차이', '2단계'],
+      ['MF-05', '배포 파이프라인', '검증 → 서명 → 전송 → 재로딩 → 일치 검사, 롤백', '3단계'],
+      ['MF-06', '실행 일치 검사', 'Manifest 값과 실제 프로세스 속성 비교', '2단계']
+    ].map(s => ({ id: s[0], name: s[1], desc: s[2], ph: s[3], pc: PH[s[3]] }));
+    const scenarios = Object.keys(SC).map(k => ({ label: SC[k].label, run: () => this.setState({ sc: k, s0: this.state.t, running: true }), bg: sc === k ? '#4C9AFF' : '#0E1116', fg: sc === k ? '#0E1116' : '#E6EAF0' }));
+    return {
+      t, runLabel: running ? '일시정지' : '재생', toggle: () => this.setState({ running: !this.state.running }),
+      reset: () => this.setState({ t: 0, sc: null, s0: 0, running: true }),
+      scenarios, noSc: !sc, hasSc: !!sc, scTitle: sc ? SC[sc].label : '', steps: sc ? mkSteps(SC[sc].steps) : [],
+      spec, specCount: spec.length, pipe, files, diff, noDiff: done, hasDiff: !done, valid, prof, rt
+    };
+  }
+}
+</script>
+</body>
+</html>

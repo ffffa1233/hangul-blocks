@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REC 녹화 재생</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#8AB8FF;border:1px solid #2A4A75;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.seek{flex:1;min-width:0;height:100%;padding:0;border:0;background:transparent;cursor:pointer;display:flex;align-items:flex-end}
+</style>
+<script src="./runtime.js"></script>
+</head>
+<body>
+<script type="text/x-dc-template" id="dc-template">
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<a href="Main.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; background: #1E252F; color: #C9D1D9; border-radius: 4px; padding: 2px 6px">REC</span><h1 style="margin: 0; font-size: 18px">녹화 · 재생</h1></div>
+<div class="muted" style="font-size: 12px">이벤트 트리거 녹화 · 모든 지표를 같은 시점으로 맞춘 재생 · 세션 관리</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span class="mono" style="font-size: 12px; color: #9AA4B2">시뮬레이션 T+{{t}}s</span>
+<button type="button" class="btn" onClick="{{toggle}}">{{runLabel}}</button>
+<sc-for list="{{scenarios}}" as="s" hint-placeholder-count="1"><button type="button" class="btn" onClick="{{s.run}}" style="background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for>
+<button type="button" class="btn" onClick="{{reset}}">초기화</button>
+</div>
+</header>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 40px">
+<aside style="flex: 1 1 300px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section class="card" aria-labelledby="sc-t">
+<h2 id="sc-t" class="h2">시나리오 진행</h2>
+<sc-if value="{{noSc}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">재생 버튼으로 세션 #43을 돌려보거나, 막대를 눌러 원하는 시점으로 이동해 보세요. 상단 버튼은 새 이벤트로 자동 녹화가 걸리는 과정을 보여줍니다.</div></sc-if>
+<sc-if value="{{hasSc}}" hint-placeholder-val="{{false}}">
+<div style="font-size: 13px; font-weight: 500; margin-bottom: 6px">{{scTitle}}</div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+<div style="display: flex; gap: 10px; padding: 6px 0"><span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: {{s.dot}}; margin-top: 5px"></span><div><div style="font-size: 13px; color: {{s.fg}}">{{s.text}}</div><div class="mono" style="font-size: 11px; color: #8B95A3">{{s.at}} · {{s.tag}}</div></div></div>
+</sc-for>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="spec-t">
+<h2 id="spec-t" class="h2">기능 명세 <span class="sub">{{specCount}}개</span></h2>
+<sc-for list="{{spec}}" as="f" hint-placeholder-count="6">
+<div style="padding: 9px 0; border-bottom: 1px solid #1E252F">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; color: #8AB8FF">{{f.id}}</span><span style="font-size: 13px; font-weight: 500; flex: 1">{{f.name}}</span><span style="font-size: 10px; color: {{f.pc}}; border: 1px solid {{f.pc}}; border-radius: 10px; padding: 0 6px; white-space: nowrap">{{f.ph}}</span></div>
+<div class="muted" style="font-size: 12px; margin-top: 2px">{{f.desc}}</div>
+</div>
+</sc-for>
+</section>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<section class="card" aria-labelledby="pb-t">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px">
+<h2 id="pb-t" class="h2" style="margin: 0">세션 #43 재생 <span class="sub">17:29:10 ~ 17:30:10 · 60초</span><span class="tag">REC-03</span></h2>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+<button type="button" class="btn" onClick="{{play}}">{{playLabel}}</button>
+<button type="button" class="btn" onClick="{{speedToggle}}">속도 {{speed}}x</button>
+<sc-for list="{{jumps}}" as="j" hint-placeholder-count="3"><button type="button" class="btn" onClick="{{j.go}}" style="font-size: 12px">{{j.label}}</button></sc-for>
+</div>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px"><span class="muted">재생 위치</span><span class="mono" style="font-size: 14px; font-weight: 500">{{phClock}} <span class="muted" style="font-size: 12px">(+{{ph}}s)</span></span></div>
+<div style="display: flex; gap: 2px; height: 80px; align-items: stretch; border-bottom: 1px solid #2A313C">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="60"><button type="button" class="seek" onClick="{{b.go}}" aria-label="{{b.aria}}"><span style="display: block; width: 100%; height: {{b.h}}; background: {{b.c}}; outline: {{b.ring}}"></span></button></sc-for>
+</div>
+<div style="display: flex; gap: 2px; height: 14px; margin-top: 4px">
+<sc-for list="{{marks}}" as="m" hint-placeholder-count="60"><span style="flex: 1; min-width: 0; height: 14px; background: {{m.c}}; border-radius: 2px"></span></sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; font-size: 12px; color: #9AA4B2">
+<span><span style="display: inline-block; width: 10px; height: 10px; background: #4C9AFF; vertical-align: middle"></span> CPU (정상)</span>
+<span><span style="display: inline-block; width: 10px; height: 10px; background: #F85149; vertical-align: middle"></span> ai_infer_svc 종료</span>
+<span><span style="display: inline-block; width: 10px; height: 10px; background: #E3A008; vertical-align: middle"></span> 재기동 중</span>
+<span>아래 줄: 알람 표시</span>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<section class="card" aria-labelledby="s1-t" style="flex: 1 1 260px">
+<h2 id="s1-t" class="h2">그 시점 상태</h2>
+<sc-for list="{{snap}}" as="s" hint-placeholder-count="5"><div style="display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid #1E252F; font-size: 13px"><span style="color: #C9D1D9">{{s.k}}</span><span class="mono" style="color: {{s.c}}">{{s.v}}</span></div></sc-for>
+</section>
+<section class="card" aria-labelledby="s2-t" style="flex: 2 1 420px">
+<h2 id="s2-t" class="h2">그 시점까지의 로그</h2>
+<div class="mono" style="background: #0B0E12; border: 1px solid #1E252F; border-radius: 8px; font-size: 12px; overflow-x: auto">
+<sc-for list="{{plogs}}" as="g" hint-placeholder-count="6">
+<div style="display: flex; gap: 12px; padding: 5px 12px; border-bottom: 1px solid #161B22; min-width: 460px"><span style="color: #8B95A3; width: 60px; flex: none">{{g.time}}</span><span style="color: {{g.fg}}; width: 44px; flex: none">{{g.lvl}}</span><span>{{g.msg}}</span></div>
+</sc-for>
+</div>
+</section>
+</div>
+
+<section class="card" aria-labelledby="ss-t">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px">
+<h2 id="ss-t" class="h2" style="margin: 0">세션 목록 <span class="tag">REC-01</span><span class="tag">REC-04</span><span class="tag">REC-05</span></h2>
+<button type="button" class="btn" style="font-size: 12px">수동 녹화 시작</button>
+</div>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 640px">
+<thead><tr><th>세션</th><th>트리거</th><th>시작</th><th style="text-align: right">길이</th><th style="text-align: right">크기</th><th>상태</th><th>내보내기</th></tr></thead>
+<tbody>
+<sc-for list="{{sessions}}" as="s" hint-placeholder-count="4">
+<tr><td class="mono" style="font-size: 12px">{{s.id}}</td><td style="font-size: 12px; color: #C9D1D9">{{s.trig}}</td><td class="mono" style="font-size: 12px; color: #9AA4B2">{{s.start}}</td><td class="mono" style="font-size: 12px; text-align: right">{{s.len}}</td><td class="mono" style="font-size: 12px; text-align: right">{{s.size}}</td><td><span class="chip" style="color: {{s.fg}}; background: {{s.bg}}">{{s.st}}</span></td><td style="font-size: 12px"><a href="#">분석 패키지(.zip)</a></td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="card" aria-labelledby="tg-t">
+<h2 id="tg-t" class="h2">자동 녹화 트리거 <span class="tag">REC-02</span></h2>
+<sc-for list="{{triggers}}" as="g" hint-placeholder-count="3">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1E252F; font-size: 13px"><span>{{g.cond}}</span><span class="mono muted" style="font-size: 12px">{{g.win}}</span></div>
+</sc-for>
+<div class="muted" style="font-size: 12px; margin-top: 8px">Agent는 최근 30초를 링버퍼에 항상 보관하고, 트리거가 걸리면 그 구간부터 디스크에 저장합니다.</div>
+</section>
+
+</main>
+</div>
+</div>
+</script>
+<script>
+window.__DC_PROPS = {"$preview":{"width":1440,"height":1500}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, running: true, sc: null, s0: 0, ph: 25, playing: false, speed: 1 };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => {
+      if (!this.state.running) return;
+      const next = { t: this.state.t + 1 };
+      if (this.state.playing) {
+        const p = this.state.ph + this.state.speed;
+        if (p >= 59) { next.ph = 59; next.playing = false; } else next.ph = p;
+      }
+      this.setState(next);
+    }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, running, sc, s0, ph, playing, speed } = this.state;
+    const el = sc ? t - s0 : -1;
+    const T = { ok: ['#3FB950', 'rgba(63,185,80,0.14)'], warn: ['#E3A008', 'rgba(227,160,8,0.14)'], crit: ['#F85149', 'rgba(248,81,73,0.14)'], info: ['#4C9AFF', 'rgba(76,154,255,0.14)'], off: ['#9AA4B2', 'rgba(154,164,178,0.10)'] };
+    const tn = (k) => T[k] || T.off;
+    const PH = { MVP: '#4C9AFF', '2단계': '#3FB9A8', '3단계': '#9AA4B2' };
+    const mkSteps = (L) => L.map((s, i) => { const n = L[i + 1]; const st = el < s.at ? 'p' : (n && el >= n.at ? 'd' : 'a'); const c = { d: ['#3FB950', '#C9D1D9', '완료'], a: ['#4C9AFF', '#E6EAF0', '진행 중'], p: ['#3A424E', '#8B95A3', '대기'] }[st]; return { at: '+' + s.at + 's', text: s.text, dot: c[0], fg: c[1], tag: c[2] }; });
+    const clk = (base, sec) => { const b = base + sec; return [Math.floor(b / 3600), Math.floor(b / 60) % 60, b % 60].map(x => String(x).padStart(2, '0')).join(':'); };
+    const S0 = 17 * 3600 + 29 * 60 + 10;
+    const SC = {
+      trig: { label: '이벤트 트리거 녹화', steps: [
+        { at: 0, text: 'CRIT 알람 발생 → 자동 녹화 트리거' },
+        { at: 1, text: '링버퍼에서 직전 30초 확보' },
+        { at: 2, text: '이후 10초 계속 기록' },
+        { at: 6, text: '세션 #44 저장 완료, 알람에 링크 연결' }
+      ]}
+    };
+    const aiAt = (s) => s < 31 ? 'Running' : (s < 33 ? 'Terminated' : (s < 36 ? 'Starting' : 'Running'));
+    const cpuAt = (s) => (s >= 33 && s < 36 ? 55 : 38) + 6 * Math.sin(s * 0.5) + 2 * Math.sin(s * 1.7);
+    const bars = [];
+    const marks = [];
+    for (let s = 0; s < 60; s++) {
+      const st = aiAt(s);
+      const v = cpuAt(s);
+      const cur = s === ph;
+      bars.push({ h: (v / 70 * 100) + '%', c: cur ? '#E6EAF0' : (st === 'Terminated' ? '#F85149' : (st === 'Starting' ? '#E3A008' : '#4C9AFF')), ring: cur ? '2px solid #E6EAF0' : 'none', aria: '+' + s + '초로 이동', go: () => this.setState({ ph: s }) });
+      const alarm = s === 31 ? '#F85149' : (s === 33 || s === 34 ? '#E3A008' : (s === 18 ? '#E3A008' : '#1E252F'));
+      marks.push({ c: alarm });
+    }
+    const st = aiAt(ph);
+    const fg = ph < 31 ? 'On' : (ph < 37 ? 'Restarting' : 'On');
+    const svc = ph < 31 || ph >= 38 ? 'Subscribed' : '미제공';
+    const snap = [
+      { k: 'Machine State', v: 'Running', c: '#3FB950' },
+      { k: 'FG AI_Inference', v: fg, c: fg === 'On' ? '#3FB950' : '#E3A008' },
+      { k: 'ai_infer_svc', v: st, c: st === 'Running' ? '#3FB950' : (st === 'Terminated' ? '#F85149' : '#E3A008') },
+      { k: 'InferenceResult', v: svc, c: svc === '미제공' ? '#F85149' : '#3FB950' },
+      { k: 'CPU 전체', v: cpuAt(ph).toFixed(0) + '%', c: '#E6EAF0' },
+      { k: 'planning p99', v: (ph >= 16 && ph < 20 ? 24 : 15) + ' ms', c: ph >= 16 && ph < 20 ? '#E3A008' : '#E6EAF0' }
+    ];
+    const L = [
+      [5, 'INFO', 'PLAN', 'trajectory published, horizon 4.0s'],
+      [12, 'INFO', 'AIIN', 'batch 4 done, 11.2ms'],
+      [18, 'WARN', 'PLAN', 'cycle overrun 24.1ms > budget 20ms'],
+      [29, 'WARN', 'AIIN', 'tensor arena near limit (96%)'],
+      [31, 'ERROR', 'EM', 'ai_infer_svc exited (SIGSEGV), core dumped'],
+      [32, 'WARN', 'COM', 'StopOffer InferenceResult 0x3001:1'],
+      [33, 'INFO', 'EM', 'restart ai_infer_svc (1/3)'],
+      [34, 'WARN', 'PERC', 'FindService(InferenceResult) timeout'],
+      [36, 'INFO', 'AIIN', 'ReportExecutionState(Running)'],
+      [38, 'INFO', 'COM', 'SubscribeAck InferenceResult eventgroup 0x01'],
+      [45, 'INFO', 'PERC', 'inference input restored, 15 FPS']
+    ];
+    const lc = { ERROR: '#F85149', WARN: '#E3A008', INFO: '#4C9AFF' };
+    const plogs = L.filter(l => l[0] <= ph).slice(-6).reverse().map(l => ({ time: clk(S0, l[0]), lvl: l[1], fg: lc[l[1]], msg: l[2] + ' · ' + l[3] }));
+
+    const jumps = [
+      { label: 'Deadline 경고 (+18s)', go: () => this.setState({ ph: 17, playing: false }) },
+      { label: '크래시 직전 (+29s)', go: () => this.setState({ ph: 29, playing: false }) },
+      { label: '복구 (+38s)', go: () => this.setState({ ph: 38, playing: false }) }
+    ];
+
+    const sessions = [];
+    if (sc === 'trig' && el >= 0) {
+      const done = el >= 6;
+      const rec = Math.min(40, 30 + Math.max(0, el - 1) * 2.5);
+      sessions.push({ id: '#44', trig: '자동 · CRIT 알람 (EM)', start: clk(17 * 3600 + 30 * 60 + s0 - 30, 0), len: done ? '40s' : (el < 1 ? '—' : Math.round(rec) + 's'), size: done ? '18.2 MB' : '기록 중', k: done ? 'ok' : 'crit', st: done ? '저장됨' : '녹화 중' });
+    }
+    sessions.push({ id: '#43', trig: '자동 · CRIT 알람 (EM)', start: '17:29:10', len: '60s', size: '26.4 MB', k: 'info', st: '재생 중' });
+    sessions.push({ id: '#42', trig: '수동 · 운영자 kim', start: '15:28:02', len: '5m 00s', size: '131 MB', k: 'ok', st: '저장됨' });
+    sessions.push({ id: '#41', trig: '자동 · Deadline 3회', start: '11:02:47', len: '40s', size: '17.9 MB', k: 'ok', st: '저장됨' });
+    const sessOut = sessions.map(s => ({ ...s, fg: tn(s.k)[0], bg: tn(s.k)[1] }));
+    const triggers = [
+      { cond: 'CRIT 알람 발생', win: '전 30초 + 후 10초' },
+      { cond: 'FG 전이 실패', win: '전 30초 + 후 30초' },
+      { cond: 'Deadline 3회 연속 초과', win: '전 20초 + 후 20초' }
+    ];
+    const spec = [
+      ['REC-01', '수동 녹화', '운영자가 시작/종료, 메모 남기기', '2단계'],
+      ['REC-02', '이벤트 트리거 녹화', '알람·전이 실패 시 링버퍼 포함 자동 저장', '2단계'],
+      ['REC-03', '동기화 재생', '모든 지표·로그를 같은 시점으로 맞춰 재생, 탐색', '3단계'],
+      ['REC-04', '세션 목록·태그', '트리거, 길이, 크기, 관련 알람 연결', '2단계'],
+      ['REC-05', '분석 패키지 내보내기', '지표·로그·Manifest 스냅샷을 묶어 오프라인 분석', '3단계'],
+      ['REC-06', '구간 비교', '정상 세션과 장애 세션을 나란히 비교', '3단계']
+    ].map(s => ({ id: s[0], name: s[1], desc: s[2], ph: s[3], pc: PH[s[3]] }));
+    const scenarios = Object.keys(SC).map(k => ({ label: SC[k].label, run: () => this.setState({ sc: k, s0: this.state.t, running: true }), bg: sc === k ? '#4C9AFF' : '#0E1116', fg: sc === k ? '#0E1116' : '#E6EAF0' }));
+    return {
+      t, runLabel: running ? '일시정지' : '재생', toggle: () => this.setState({ running: !this.state.running }),
+      reset: () => this.setState({ t: 0, sc: null, s0: 0, running: true, ph: 25, playing: false, speed: 1 }),
+      scenarios, noSc: !sc, hasSc: !!sc, scTitle: sc ? SC[sc].label : '', steps: sc ? mkSteps(SC[sc].steps) : [],
+      spec, specCount: spec.length,
+      play: () => this.setState({ playing: !this.state.playing, running: true, ph: this.state.ph >= 59 ? 0 : this.state.ph }),
+      playLabel: playing ? '정지' : '세션 재생', speed: String(speed), speedToggle: () => this.setState({ speed: this.state.speed === 1 ? 4 : 1 }),
+      jumps, ph: String(ph), phClock: clk(S0, ph), bars, marks, snap, plogs, sessions: sessOut, triggers
+    };
+  }
+}
+window.__DC_Component = Component;
+</script>
+</body>
+</html>

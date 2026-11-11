@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Security SecOC 상세</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.sel{background:#0E1116;color:#E6EAF0;border:1px solid #2A313C;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;min-height:40px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C;white-space:nowrap}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #1E252F;font-size:13px}
+.rowbtn{background:none;border:0;padding:0;color:#8AB8FF;font:inherit;font-size:12px;cursor:pointer;min-height:32px}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22">
+<a href="Main.dc.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div class="muted" style="font-size: 12px">Security / SEC-03</div>
+<h1 style="margin: 0; font-size: 18px">SecOC 메시지 인증</h1>
+</div>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #C9D1D9"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{liveDot}}"></span>{{liveText}}</span>
+<button type="button" class="btn" onClick="{{toggleLive}}">{{liveBtn}}</button>
+<button type="button" class="btn" onClick="{{inject}}" style="border-color: #6B2A27; color: #F85149">위조 프레임 주입 (시험)</button>
+</header>
+<nav aria-label="Security 메뉴" style="display: flex; gap: 2px; padding: 0 24px; background: #161B22; border-bottom: 1px solid #2A313C; overflow-x: auto">
+<sc-for list="{{tabs}}" as="b" hint-placeholder-count="8"><a href="{{b.href}}" style="padding: 12px 14px; white-space: nowrap; text-decoration: none; font-size: 13px; color: {{b.fg}}; border-bottom: 2px solid {{b.line}}">{{b.label}}</a></sc-for>
+</nav>
+
+<div style="padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 20px">
+
+<sc-if value="{{attackOn}}" hint-placeholder-val="{{false}}">
+<div style="padding: 12px 16px; border-radius: 10px; border: 1px solid #6B2A27; background: rgba(248,81,73,0.10); font-size: 13px"><b style="color: #F85149">{{attackTitle}}</b> — {{attackText}}</div>
+</sc-if>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<div class="card" style="padding: 14px"><div class="muted" style="font-size: 12px">{{k.label}}</div><div class="mono" style="font-size: 24px; font-weight: 500; color: {{k.c}}">{{k.v}}</div><div class="muted" style="font-size: 12px">{{k.sub}}</div></div>
+</sc-for>
+</div>
+
+<section class="card" aria-labelledby="pdu-t">
+<h2 id="pdu-t" class="h2">보호 대상 PDU <span class="sub">행을 누르면 아래에 상세가 열립니다</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 900px">
+<thead><tr><th>PDU</th><th>경로</th><th>프로파일</th><th style="text-align: right">검증/s</th><th style="text-align: right">MAC 실패</th><th style="text-align: right">Freshness 실패</th><th>키 ID</th><th>마지막 실패</th><th></th></tr></thead>
+<tbody>
+<sc-for list="{{pdus}}" as="p" hint-placeholder-count="5">
+<tr style="background: {{p.rowBg}}">
+<td><div style="font-weight: 500">{{p.name}}</div><div class="mono muted" style="font-size: 11px">{{p.id}}</div></td>
+<td class="mono" style="font-size: 12px; color: #C9D1D9">{{p.route}}</td>
+<td style="font-size: 12px">{{p.prof}}</td>
+<td class="mono" style="font-size: 12px; text-align: right">{{p.rate}}</td>
+<td class="mono" style="font-size: 12px; text-align: right; color: {{p.macC}}">{{p.mac}}</td>
+<td class="mono" style="font-size: 12px; text-align: right; color: {{p.fvC}}">{{p.fv}}</td>
+<td class="mono" style="font-size: 12px; color: #9AA4B2">{{p.key}}</td>
+<td class="mono" style="font-size: 12px; color: #9AA4B2">{{p.last}}</td>
+<td><button type="button" class="rowbtn" onClick="{{p.pick}}">{{p.pickLabel}}</button></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<div style="flex: 3 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<section class="card" aria-labelledby="fl-t">
+<h2 id="fl-t" class="h2"><span>{{cur.name}}</span> 검증 실패 <span class="sub">최근 60초, 초당 건수</span></h2>
+<div style="display: flex; align-items: flex-end; gap: 2px; height: 100px; border-bottom: 1px solid #2A313C">
+<sc-for list="{{fails}}" as="f" hint-placeholder-count="60">
+<div style="flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end"><div style="height: {{f.fv}}; background: #E3A008"></div><div style="height: {{f.mac}}; background: #F85149"></div></div>
+</sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #9AA4B2; margin-top: 6px"><span class="mono">-60s</span><span><span style="display: inline-block; width: 10px; height: 10px; background: #F85149; vertical-align: middle"></span> MAC 실패 <span style="display: inline-block; width: 10px; height: 10px; background: #E3A008; vertical-align: middle; margin-left: 10px"></span> Freshness 실패</span><span class="mono">지금</span></div>
+</section>
+<section class="card" aria-labelledby="fr-t">
+<h2 id="fr-t" class="h2">Freshness 값 변화 <span class="sub">수신값 − 기대값, 최근 30프레임</span></h2>
+<div style="position: relative; height: 110px">
+<div style="position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid #3A424E"></div>
+<div style="position: absolute; inset: 0; display: flex; gap: 3px">
+<sc-for list="{{fresh}}" as="f" hint-placeholder-count="30">
+<div style="flex: 1; position: relative; height: 100%"><div style="position: absolute; left: 0; right: 0; top: {{f.top}}; height: {{f.h}}; background: {{f.c}}; border-radius: 2px"></div></div>
+</sc-for>
+</div>
+</div>
+<div class="muted" style="font-size: 12px; margin-top: 6px">0 근처 = 정상 순서. 아래로 크게 내려가면 예전 값을 재사용한 것으로, 재전송(replay) 공격을 의심합니다.</div>
+</section>
+</div>
+
+<div style="flex: 2 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<section class="card" aria-labelledby="lf-t">
+<h2 id="lf-t" class="h2">마지막 실패 프레임</h2>
+<sc-if value="{{noFrame}}" hint-placeholder-val="{{false}}"><div class="muted" style="font-size: 13px">최근 1시간 동안 이 PDU의 검증 실패가 없습니다.</div></sc-if>
+<sc-if value="{{hasFrame}}" hint-placeholder-val="{{true}}">
+<sc-for list="{{frame}}" as="f" hint-placeholder-count="8"><div class="kv"><span class="muted">{{f.k}}</span><span class="mono" style="color: {{f.c}}; text-align: right; word-break: break-all">{{f.v}}</span></div></sc-for>
+<div style="display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 13px"><a href="SEC-IDS.dc.html">IDS 사건 보기</a><a href="COM.dc.html">이 PDU 통신 통계</a></div>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="ky-t">
+<h2 id="ky-t" class="h2">키 · 프로파일</h2>
+<sc-for list="{{keyInfo}}" as="f" hint-placeholder-count="6"><div class="kv"><span class="muted">{{f.k}}</span><span class="mono">{{f.v}}</span></div></sc-for>
+<div class="muted" style="font-size: 11px; margin-top: 8px">키 값은 HSM 밖으로 나오지 않으며 모니터는 메타데이터만 표시합니다.</div>
+</section>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, live: true, sel: 'VehicleState', inj: null };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { if (this.state.live) this.setState({ t: this.state.t + 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, live, sel, inj } = this.state;
+    const ME = 'SEC-SECOC';
+    const TABS = [['SEC', '개요'], ['SEC-IAM', '접근 거부'], ['SEC-PERM', '권한 매트릭스'], ['SEC-SECOC', 'SecOC'], ['SEC-BOOT', 'Secure Boot'], ['SEC-CERT', '인증서·키'], ['SEC-IDS', 'IDS 사건'], ['SEC-AUDIT', '감사 로그']];
+    const tabs = TABS.map(([f, l]) => ({ href: f === ME ? '#' : f + '.dc.html', label: l, fg: f === ME ? '#E6EAF0' : '#9AA4B2', line: f === ME ? '#4C9AFF' : 'transparent' }));
+    const clock = (sec) => { const b = 17 * 3600 + 30 * 60 + sec; return [Math.floor(b / 3600) % 24, Math.floor(b / 60) % 60, b % 60].map(x => String(x).padStart(2, '0')).join(':'); };
+    const at = (k) => inj === null ? -1 : k - inj;
+    const macAt = (k) => { const e = at(k); return e >= 0 && e < 3 ? 3 : 0; };
+    const fvAt = (k) => { const e = at(k); return e >= 3 && e < 6 ? 2 : 0; };
+    let macSum = 0, fvSum = 0;
+    if (inj !== null) for (let k = inj; k <= t; k++) { macSum += macAt(k); fvSum += fvAt(k); }
+    const el = inj === null ? -1 : t - inj;
+    const attackOn = inj !== null && el < 12;
+    const P = [
+      { name: 'VehicleState', id: 'SOME/IP 0x2001 · 0x8001', route: 'control_app → planning_app, hmi', prof: 'CMAC-AES128 · MAC 64bit · FV 카운터', rate: 100, mac: 0, fv: 0, key: 'k-vs-03', last: '—', live: true },
+      { name: 'BrakeCmd', id: 'CAN-FD 0x120', route: 'ADCU → ESC (게이트웨이)', prof: 'CMAC-AES128 · MAC 28bit · FV 타임스탬프', rate: 200, mac: 0, fv: 0, key: 'k-bk-01', last: '—' },
+      { name: 'SteerCmd', id: 'CAN-FD 0x124', route: 'ADCU → EPS (게이트웨이)', prof: 'CMAC-AES128 · MAC 28bit · FV 타임스탬프', rate: 200, mac: 0, fv: 1, key: 'k-st-01', last: '14:02:51' },
+      { name: 'ObjectList', id: 'SOME/IP 0x1001 · 0x8001', route: 'perception_app → planning_app', prof: 'TLS 1.3 채널 (SecOC 미적용)', rate: 30, mac: 0, fv: 0, key: 'cert dev-01', last: '—' },
+      { name: 'DiagEvent', id: 'SOME/IP 0x4001 · 0x8002', route: 'diag_mgr → cloud_gw', prof: 'CMAC-AES128 · MAC 64bit · FV 카운터', rate: 1, mac: 0, fv: 0, key: 'k-dg-02', last: '—' }
+    ];
+    const pdus = P.map(p => {
+      const isVS = p.name === 'VehicleState';
+      const mac = isVS ? macSum : p.mac, fv = isVS ? fvSum : p.fv;
+      const last = isVS && inj !== null ? clock(inj + Math.min(el, 5)) : p.last;
+      return { ...p, rate: (p.rate + (p.rate > 10 ? Math.sin(t + p.rate) * 0.5 : 0)).toFixed(p.rate > 10 ? 1 : 0), mac: String(mac), fv: String(fv), last,
+        macC: mac > 0 ? '#F85149' : '#9AA4B2', fvC: fv > 0 ? '#E3A008' : '#9AA4B2', rowBg: p.name === sel ? 'rgba(76,154,255,0.10)' : 'transparent',
+        pickLabel: p.name === sel ? '선택됨' : '상세', pick: () => this.setState({ sel: p.name }) };
+    });
+    const cur = pdus.find(p => p.name === sel);
+    const isVS = sel === 'VehicleState';
+    const fails = [];
+    for (let k = t - 59; k <= t; k++) {
+      const m = isVS ? macAt(k) : (sel === 'SteerCmd' && k === t - 41 ? 1 : 0);
+      const f = isVS ? fvAt(k) : 0;
+      fails.push({ mac: (m / 4 * 100) + '%', fv: (f / 4 * 100) + '%' });
+    }
+    const fresh = [];
+    for (let i = 0; i < 30; i++) {
+      const k = t * 3 + i;
+      let v = (k % 7 === 0 ? 2 : 1);
+      if (isVS && inj !== null && el >= 3 && el < 6 && i >= 22) v = -40 - (i % 3) * 6;
+      const h = Math.min(50, Math.abs(v) * 1.1 + 2);
+      fresh.push({ top: v >= 0 ? (50 - h) + '%' : '50%', h: h + '%', c: v < 0 ? '#F85149' : '#3FB950' });
+    }
+    const hasFrame = (isVS && inj !== null) || sel === 'SteerCmd';
+    const replay = isVS && el >= 3;
+    const frame = isVS ? [
+      { k: '시각', v: inj !== null ? '2026-11-10 ' + clock(inj + Math.min(el, 5)) : '—', c: '#E6EAF0' },
+      { k: '송신 주소', v: '192.168.10.77 : 30509', c: '#F85149' },
+      { k: '정상 송신자', v: '192.168.10.12 (control_app)', c: '#E6EAF0' },
+      { k: '실패 유형', v: replay ? 'Freshness 역행 (재전송 의심)' : 'MAC 불일치 (위조 의심)', c: replay ? '#E3A008' : '#F85149' },
+      { k: 'Freshness 수신 / 기대', v: replay ? '0x0004A1B0 / 0x0004A1E2' : '0x0004A1C8 / 0x0004A1C8', c: '#E6EAF0' },
+      { k: 'MAC 수신', v: '9C 41 07 E2 5A 11 F0 3D', c: '#E6EAF0' },
+      { k: 'MAC 계산', v: replay ? '9C 41 07 E2 5A 11 F0 3D (일치)' : '27 B8 C4 90 1E 6F 02 AA', c: replay ? '#9AA4B2' : '#F85149' },
+      { k: '처리', v: '프레임 폐기 · 앱 전달 안 함', c: '#3FB950' }
+    ] : [
+      { k: '시각', v: '2026-11-10 14:02:51', c: '#E6EAF0' },
+      { k: '실패 유형', v: 'Freshness 타임스탬프 허용 범위 초과', c: '#E3A008' },
+      { k: '시간 차', v: '+18 ms (허용 ±10 ms)', c: '#E3A008' },
+      { k: '추정 원인', v: '게이트웨이 시간 동기 지연', c: '#E6EAF0' },
+      { k: '처리', v: '프레임 폐기 · 다음 주기 정상', c: '#3FB950' }
+    ];
+    const keyInfo = [
+      { k: '키 ID', v: cur.key }, { k: '키 버전', v: isVS ? 'v3' : 'v1' }, { k: '저장 위치', v: 'HSM 슬롯 ' + (isVS ? '12' : '14') },
+      { k: '생성일', v: isVS ? '2026-08-14' : '2026-03-02' }, { k: '다음 교체', v: isVS ? 'D-120' : 'D-14' }, { k: '프로파일', v: cur.prof }
+    ];
+    const kpis = [
+      { label: '초당 검증', v: String(Math.round(531 + 3 * Math.sin(t))), sub: '보호 PDU 5개', c: '#E6EAF0' },
+      { label: 'MAC 실패 (1시간)', v: String(macSum), sub: '위조 의심', c: macSum ? '#F85149' : '#E6EAF0' },
+      { label: 'Freshness 실패 (1시간)', v: String(fvSum + 1), sub: '재전송·시간 오차', c: fvSum ? '#E3A008' : '#E6EAF0' },
+      { label: '가장 가까운 키 교체', v: 'D-14', sub: 'k-st-01 (SteerCmd)', c: '#E3A008' }
+    ];
+    return {
+      tabs, liveDot: live ? '#3FB950' : '#9AA4B2', liveText: live ? '실시간 수신 중' : '일시정지', liveBtn: live ? '일시정지' : '재개',
+      toggleLive: () => this.setState({ live: !this.state.live }),
+      inject: () => this.setState({ inj: this.state.t, sel: 'VehicleState', live: true }),
+      attackOn, attackTitle: el < 3 ? '위조 프레임 수신 중' : (el < 6 ? '재전송 프레임 수신 중' : '시험 종료'),
+      attackText: el < 6 ? '192.168.10.77에서 VehicleState 프레임이 들어와 모두 폐기되고 있습니다. IDS 사건으로 자동 연결됩니다.' : '모든 위조·재전송 프레임이 폐기되었고 앱에는 전달되지 않았습니다.',
+      kpis, pdus, cur, fails, fresh, frame, hasFrame, noFrame: !hasFrame, keyInfo
+    };
+  }
+}
+</script>
+</body>
+</html>

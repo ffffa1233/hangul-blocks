@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RES 리소스</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#8AB8FF;border:1px solid #2A4A75;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+</style>
+<script src="./runtime.js"></script>
+</head>
+<body>
+<script type="text/x-dc-template" id="dc-template">
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<a href="Main.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; background: #1E252F; color: #C9D1D9; border-radius: 4px; padding: 2px 6px">RES</span><h1 style="margin: 0; font-size: 18px">리소스</h1></div>
+<div class="muted" style="font-size: 12px">CPU · 메모리 · 디스크 · 네트워크 · 온도 · 이상 탐지</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span class="mono" style="font-size: 12px; color: #9AA4B2">시뮬레이션 T+{{t}}s</span>
+<button type="button" class="btn" onClick="{{toggle}}">{{runLabel}}</button>
+<sc-for list="{{scenarios}}" as="s" hint-placeholder-count="2"><button type="button" class="btn" onClick="{{s.run}}" style="background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for>
+<button type="button" class="btn" onClick="{{reset}}">초기화</button>
+</div>
+</header>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 40px">
+<aside style="flex: 1 1 300px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section class="card" aria-labelledby="sc-t">
+<h2 id="sc-t" class="h2">시나리오 진행</h2>
+<sc-if value="{{noSc}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">상단 시나리오 버튼을 누르면 단계별로 진행됩니다.</div></sc-if>
+<sc-if value="{{hasSc}}" hint-placeholder-val="{{false}}">
+<div style="font-size: 13px; font-weight: 500; margin-bottom: 6px">{{scTitle}}</div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; padding: 6px 0"><span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: {{s.dot}}; margin-top: 5px"></span><div><div style="font-size: 13px; color: {{s.fg}}">{{s.text}}</div><div class="mono" style="font-size: 11px; color: #8B95A3">{{s.at}} · {{s.tag}}</div></div></div>
+</sc-for>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="spec-t">
+<h2 id="spec-t" class="h2">기능 명세 <span class="sub">{{specCount}}개</span></h2>
+<sc-for list="{{spec}}" as="f" hint-placeholder-count="8">
+<div style="padding: 9px 0; border-bottom: 1px solid #1E252F">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; color: #8AB8FF">{{f.id}}</span><span style="font-size: 13px; font-weight: 500; flex: 1">{{f.name}}</span><span style="font-size: 10px; color: {{f.pc}}; border: 1px solid {{f.pc}}; border-radius: 10px; padding: 0 6px; white-space: nowrap">{{f.ph}}</span></div>
+<div class="muted" style="font-size: 12px; margin-top: 2px">{{f.desc}}</div>
+</div>
+</sc-for>
+</section>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<section class="card" aria-labelledby="cp-t" style="flex: 1 1 340px">
+<h2 id="cp-t" class="h2">코어별 CPU <span class="sub">load avg {{load}}</span><span class="tag">RES-01</span></h2>
+<div style="display: flex; align-items: flex-end; gap: 6px; height: 130px; border-bottom: 1px solid #2A313C">
+<sc-for list="{{cores}}" as="c" hint-placeholder-count="8">
+<div style="flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px"><span class="mono" style="font-size: 10px; color: #9AA4B2">{{c.v}}</span><div style="width: 100%; height: {{c.h}}; background: {{c.color}}; border-radius: 3px 3px 0 0"></div></div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 6px; margin-top: 4px"><sc-for list="{{cores}}" as="c" hint-placeholder-count="8"><span class="mono" style="flex: 1; text-align: center; font-size: 10px; color: #8B95A3">{{c.name}}</span></sc-for></div>
+<div class="muted" style="font-size: 11px; margin-top: 4px">C0-3 Gold 클러스터 · C4-7 Prime/Silver (예시 배치)</div>
+</section>
+<section class="card" aria-labelledby="mm-t" style="flex: 1 1 340px">
+<h2 id="mm-t" class="h2">메모리 추이 <span class="sub">최근 30초 · 16GB</span><span class="tag">RES-02</span></h2>
+<div style="position: relative; height: 130px; border-bottom: 1px solid #2A313C">
+<div style="position: absolute; left: 0; right: 0; bottom: 80%; border-top: 1px dashed #E3A008"></div>
+<span class="mono" style="position: absolute; right: 0; bottom: 81%; font-size: 10px; color: #E3A008">80%</span>
+<div style="position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 3px">
+<sc-for list="{{mem}}" as="m" hint-placeholder-count="30"><div style="flex: 1; height: {{m.h}}; background: {{m.c}}"></div></sc-for>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 12px">
+<sc-for list="{{memParts}}" as="p" hint-placeholder-count="3"><span><span class="muted">{{p.k}}</span> <b class="mono" style="color: {{p.c}}">{{p.v}}</b></span></sc-for>
+</div>
+</section>
+</div>
+
+<section class="card" aria-labelledby="tn-t">
+<h2 id="tn-t" class="h2">Top 프로세스 <span class="sub">RSS 순</span><span class="tag">RES-07</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 640px">
+<thead><tr><th>프로세스</th><th style="text-align: right">CPU</th><th style="text-align: right">RSS</th><th style="text-align: right">증가율</th><th style="text-align: right">I/O</th><th>기준선 대비</th></tr></thead>
+<tbody>
+<sc-for list="{{top}}" as="p" hint-placeholder-count="5">
+<tr style="background: {{p.rowBg}}"><td class="mono" style="font-size: 12px">{{p.name}}</td><td class="mono" style="font-size: 12px; text-align: right; color: {{p.cc}}">{{p.cpu}}</td><td class="mono" style="font-size: 12px; text-align: right">{{p.rss}}</td><td class="mono" style="font-size: 12px; text-align: right; color: {{p.gc}}">{{p.grow}}</td><td class="mono" style="font-size: 12px; text-align: right">{{p.io}}</td><td style="font-size: 12px; color: {{p.ac}}">{{p.anom}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px">
+<section class="card" aria-labelledby="dk-t">
+<h2 id="dk-t" class="h2">디스크 I/O <span class="tag">RES-03</span></h2>
+<sc-for list="{{disk}}" as="d" hint-placeholder-count="3"><div style="display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #1E252F; font-size: 13px"><span style="color: #C9D1D9">{{d.k}}</span><span class="mono" style="color: {{d.c}}">{{d.v}}</span></div></sc-for>
+</section>
+<section class="card" aria-labelledby="nt-t">
+<h2 id="nt-t" class="h2">네트워크 <span class="tag">RES-04</span></h2>
+<sc-for list="{{net}}" as="d" hint-placeholder-count="3"><div style="display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #1E252F; font-size: 13px"><span class="mono" style="color: #C9D1D9">{{d.k}}</span><span class="mono">{{d.v}}</span></div></sc-for>
+</section>
+<section class="card" aria-labelledby="th-t">
+<h2 id="th-t" class="h2">온도 · 클럭 <span class="tag">RES-05</span></h2>
+<sc-for list="{{therm}}" as="d" hint-placeholder-count="4"><div style="display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #1E252F; font-size: 13px"><span style="color: #C9D1D9">{{d.k}}</span><span class="mono" style="color: {{d.c}}">{{d.v}}</span></div></sc-for>
+</section>
+<section class="card" aria-labelledby="ir-t">
+<h2 id="ir-t" class="h2">IRQ · 컨텍스트 스위치 <span class="tag">RES-08</span></h2>
+<sc-for list="{{irq}}" as="d" hint-placeholder-count="3"><div style="display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #1E252F; font-size: 13px"><span style="color: #C9D1D9">{{d.k}}</span><span class="mono" style="color: {{d.c}}">{{d.v}}</span></div></sc-for>
+</section>
+</div>
+
+<section class="card" aria-labelledby="an-t">
+<h2 id="an-t" class="h2">이상 탐지 <span class="sub">7일 기준선 대비</span><span class="tag">RES-06</span></h2>
+<sc-if value="{{noAnom}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">기준선을 벗어난 지표가 없습니다.</div></sc-if>
+<sc-for list="{{anoms}}" as="a" hint-placeholder-count="2">
+<div style="display: flex; gap: 10px; padding: 8px 10px; margin-bottom: 8px; border-radius: 8px; background: {{a.bg}}; border: 1px solid #2A313C"><span style="font-size: 10px; font-weight: 700; color: {{a.fg}}; align-self: flex-start; margin-top: 3px">{{a.sev}}</span><div><div style="font-size: 13px">{{a.msg}}</div><div class="muted" style="font-size: 12px">{{a.detail}}</div></div></div>
+</sc-for>
+</section>
+
+</main>
+</div>
+</div>
+</script>
+<script>
+window.__DC_PROPS = {"$preview":{"width":1440,"height":1500}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, running: true, sc: null, s0: 0 };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { if (this.state.running) this.setState({ t: this.state.t + 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, running, sc, s0 } = this.state;
+    const el = sc ? t - s0 : -1;
+    const PH = { MVP: '#4C9AFF', '2단계': '#3FB9A8', '3단계': '#9AA4B2' };
+    const mkSteps = (L) => L.map((s, i) => { const n = L[i + 1]; const st = el < s.at ? 'p' : (n && el >= n.at ? 'd' : 'a'); const c = { d: ['#3FB950', '#C9D1D9', '완료'], a: ['#4C9AFF', '#E6EAF0', '진행 중'], p: ['#3A424E', '#8B95A3', '대기'] }[st]; return { at: '+' + s.at + 's', text: s.text, dot: c[0], fg: c[1], tag: c[2] }; });
+    const wv = (i, base, amp) => Math.max(0, base + amp * Math.sin(t * 0.9 + i * 1.7));
+    const SC = {
+      leak: { label: '메모리 누수', steps: [
+        { at: 0, text: 'perception_app RSS가 820MB에서 매초 +40MB 증가' },
+        { at: 3, text: '기준선 대비 이상 탐지: RSS 기울기 +40MB/s' },
+        { at: 6, text: 'perception.slice 메모리 한도 80% 경고' },
+        { at: 9, text: 'OOM 직전: 재시작 권고 알람 (EM 연계)' }
+      ]},
+      cpu: { label: 'CPU 과부하', steps: [
+        { at: 0, text: '코어 4-6 perception 부하 95% 이상' },
+        { at: 2, text: 'load avg 7.8 (8코어 기준 포화)' },
+        { at: 3, text: '컨텍스트 스위치 급증, control_app 지연 증가' },
+        { at: 5, text: 'SoC 84°C, CPU 클럭 다운' },
+        { at: 7, text: '부하 해소, 정상화' }
+      ]}
+    };
+    const cpuHot = (e) => sc === 'cpu' && e >= 0 && e < 7;
+    const leakMB = (e) => sc === 'leak' && e >= 0 ? Math.min(12, e) * 40 : 0;
+
+    const base = [62, 48, 35, 40, 70, 66, 58, 12];
+    const cores = base.map((b, i) => {
+      let v = wv(i, b, 6);
+      if (cpuHot(el) && i >= 4 && i <= 6) v = 95 + 3 * Math.sin(t + i);
+      if (cpuHot(el) && el >= 2 && i < 4) v = Math.min(99, v + 25);
+      v = Math.min(100, v);
+      return { name: 'C' + i, v: Math.round(v) + '%', h: Math.max(3, v) + '%', color: v >= 90 ? '#F85149' : (v >= 75 ? '#E3A008' : '#4C9AFF') };
+    });
+    const load = cpuHot(el) && el >= 2 ? (7.8 + 0.2 * Math.sin(t)).toFixed(2) : (3.4 + 0.3 * Math.sin(t * 0.5)).toFixed(2);
+
+    const mem = [];
+    for (let k = t - 29; k <= t; k++) {
+      const used = 5400 + 80 * Math.sin(k * 0.6) + leakMB(sc ? k - s0 : -1) * 4.5;
+      const pct = used / 16384 * 100;
+      mem.push({ h: Math.min(100, pct) + '%', c: pct >= 80 ? '#E3A008' : '#3FB9A8' });
+    }
+    const usedNow = 5400 + leakMB(el) * 4.5;
+    const memParts = [
+      { k: '사용', v: (usedNow / 1024).toFixed(1) + ' GB', c: usedNow / 16384 >= 0.8 ? '#E3A008' : '#E6EAF0' },
+      { k: '캐시', v: '3.2 GB', c: '#E6EAF0' },
+      { k: '여유', v: ((16384 - usedNow - 3277) / 1024).toFixed(1) + ' GB', c: '#E6EAF0' }
+    ];
+
+    const leakNow = leakMB(el);
+    const P = [
+      { name: 'ai_infer_svc', cpu: wv(1, 14, 2), rss: 1100, io: '0.2 MB/s' },
+      { name: 'perception_app', cpu: cpuHot(el) ? 285 : wv(2, 40, 4), rss: 820 + leakNow, io: '1.4 MB/s', leak: leakNow > 0 },
+      { name: 'planning_app', cpu: wv(3, 21, 2), rss: 310, io: '0.1 MB/s' },
+      { name: 'control_app', cpu: wv(4, 8, 1), rss: 64, io: '0 MB/s' },
+      { name: 'com_gateway', cpu: wv(5, 3.6, 0.5), rss: 22, io: '0 MB/s' }
+    ].sort((a, b) => b.rss - a.rss);
+    const top = P.map(p => {
+      const anomLeak = p.leak && el >= 3;
+      const anomCpu = p.name === 'perception_app' && cpuHot(el);
+      return {
+        name: p.name, cpu: p.cpu.toFixed(1) + '%', cc: p.cpu >= 100 ? '#F85149' : '#E6EAF0', rss: Math.round(p.rss) + ' MB',
+        grow: p.leak ? '+40 MB/s' : '0', gc: p.leak ? '#F85149' : '#9AA4B2', io: p.io,
+        anom: anomLeak ? '이상: 메모리 증가 추세' : (anomCpu ? '이상: CPU 기준선 3배' : '정상 범위'), ac: anomLeak || anomCpu ? '#F85149' : '#9AA4B2',
+        rowBg: anomLeak || anomCpu ? 'rgba(248,81,73,0.06)' : 'transparent'
+      };
+    });
+
+    const disk = [
+      { k: '읽기', v: wv(1, 3.2, 0.6).toFixed(1) + ' MB/s', c: '#E6EAF0' },
+      { k: '쓰기', v: wv(2, 1.8, 0.4).toFixed(1) + ' MB/s', c: '#E6EAF0' },
+      { k: 'iowait', v: wv(3, 1.2, 0.3).toFixed(1) + '%', c: '#E6EAF0' }
+    ];
+    const net = [
+      { k: 'eth0 rx/tx', v: wv(1, 31, 2).toFixed(0) + ' / ' + wv(2, 7, 1).toFixed(0) + ' Mbps' },
+      { k: 'eth1.20 rx/tx', v: '1.2 / 1.1 Mbps' },
+      { k: 'wlan0 rx/tx', v: '0.3 / 0.1 Mbps' }
+    ];
+    const hot = cpuHot(el) && el >= 5;
+    const therm = [
+      { k: 'SoC', v: (hot ? 84 : 71) + Math.round(Math.sin(t)) + '°C', c: hot ? '#E3A008' : '#E6EAF0' },
+      { k: 'CPU 클럭 (Gold)', v: hot ? '1.8 GHz ↓' : '2.4 GHz', c: hot ? '#E3A008' : '#E6EAF0' },
+      { k: 'NPU', v: '68°C', c: '#E6EAF0' },
+      { k: '보드', v: '52°C', c: '#E6EAF0' }
+    ];
+    const cs = cpuHot(el) && el >= 3;
+    const irq = [
+      { k: '컨텍스트 스위치', v: (cs ? wv(1, 182, 8) : wv(1, 48, 3)).toFixed(0) + 'k/s', c: cs ? '#F85149' : '#E6EAF0' },
+      { k: 'IRQ (eth0)', v: wv(2, 12, 1).toFixed(1) + 'k/s', c: '#E6EAF0' },
+      { k: 'IRQ (camera)', v: '1.8k/s', c: '#E6EAF0' }
+    ];
+    const anoms = [];
+    if (sc === 'leak' && el >= 3) anoms.push({ sev: el >= 9 ? 'CRIT' : 'WARN', msg: 'perception_app 메모리 지속 증가', detail: '기울기 +40MB/s, 기준선 ±5MB · 현재 ' + (820 + leakNow) + 'MB', crit: el >= 9 });
+    if (sc === 'leak' && el >= 6) anoms.push({ sev: 'WARN', msg: 'perception.slice 메모리 한도 80% 초과', detail: '한도 1.5GB', crit: false });
+    if (cpuHot(el) && el >= 2) anoms.push({ sev: 'WARN', msg: 'load avg 기준선 대비 2.3배', detail: '기준선 3.4 · 현재 ' + load, crit: false });
+    const anomOut = anoms.map(a => ({ ...a, fg: a.crit ? '#F85149' : '#E3A008', bg: a.crit ? 'rgba(248,81,73,0.10)' : 'rgba(227,160,8,0.08)' }));
+
+    const spec = [
+      ['RES-01', '코어별 CPU', '코어·클러스터별 사용률, load average', 'MVP'],
+      ['RES-02', '메모리', '사용·캐시·여유, 30초~7일 추이', 'MVP'],
+      ['RES-03', '디스크 I/O', '읽기·쓰기 속도, iowait', 'MVP'],
+      ['RES-04', '네트워크', 'NIC·VLAN별 송수신 속도', 'MVP'],
+      ['RES-05', '온도·클럭', 'SoC·NPU 온도, DVFS 클럭 변화', '2단계'],
+      ['RES-06', '이상 탐지', '7일 기준선 대비 급증·누수 추세 감지', '3단계'],
+      ['RES-07', 'Top 프로세스', 'CPU·RSS·I/O 순 정렬, 증가율', '2단계'],
+      ['RES-08', 'IRQ·컨텍스트 스위치', '인터럽트, 스케줄링 부하 지표', '2단계']
+    ].map(s => ({ id: s[0], name: s[1], desc: s[2], ph: s[3], pc: PH[s[3]] }));
+    const scenarios = Object.keys(SC).map(k => ({ label: SC[k].label, run: () => this.setState({ sc: k, s0: this.state.t, running: true }), bg: sc === k ? '#4C9AFF' : '#0E1116', fg: sc === k ? '#0E1116' : '#E6EAF0' }));
+    return {
+      t, runLabel: running ? '일시정지' : '재생', toggle: () => this.setState({ running: !this.state.running }),
+      reset: () => this.setState({ t: 0, sc: null, s0: 0, running: true }),
+      scenarios, noSc: !sc, hasSc: !!sc, scTitle: sc ? SC[sc].label : '', steps: sc ? mkSteps(SC[sc].steps) : [],
+      spec, specCount: spec.length, cores, load, mem, memParts, top, disk, net, therm, irq, anoms: anomOut, noAnom: anomOut.length === 0
+    };
+  }
+}
+window.__DC_Component = Component;
+</script>
+</body>
+</html>

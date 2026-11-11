@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security 권한 매트릭스</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.sel{background:#0E1116;color:#E6EAF0;border:1px solid #2A313C;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;min-height:40px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C;white-space:nowrap}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F;vertical-align:top}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.cell{width:100%;min-height:40px;border-radius:6px;border:1px solid #2A313C;font:inherit;font-size:12px;font-family:'JetBrains Mono',monospace;cursor:pointer}
+</style>
+<script src="./runtime.js"></script>
+</head>
+<body>
+<script type="text/x-dc-template" id="dc-template">
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22">
+<a href="Main.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div class="muted" style="font-size: 12px">Security / SEC-02</div>
+<h1 style="margin: 0; font-size: 18px">권한 매트릭스</h1>
+</div>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9AA4B2">기준<select class="sel"><option>배포본 (Manifest v1.4.2)</option><option>저장소 main</option></select></label>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9AA4B2">사용 집계<select class="sel"><option>최근 7일</option><option>최근 30일</option></select></label>
+</header>
+<nav aria-label="Security 메뉴" style="display: flex; gap: 2px; padding: 0 24px; background: #161B22; border-bottom: 1px solid #2A313C; overflow-x: auto">
+<sc-for list="{{tabs}}" as="b" hint-placeholder-count="8"><a href="{{b.href}}" style="padding: 12px 14px; white-space: nowrap; text-decoration: none; font-size: 13px; color: {{b.fg}}; border-bottom: 2px solid {{b.line}}">{{b.label}}</a></sc-for>
+</nav>
+
+<div style="padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<div class="card" style="padding: 14px"><div class="muted" style="font-size: 12px">{{k.label}}</div><div class="mono" style="font-size: 24px; font-weight: 500; color: {{k.c}}">{{k.v}}</div><div class="muted" style="font-size: 12px">{{k.sub}}</div></div>
+</sc-for>
+</div>
+
+<section class="card" aria-labelledby="mx-t">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 10px">
+<h2 id="mx-t" class="h2" style="margin: 0">앱 × 서비스 <span class="sub">칸을 누르면 아래에 그 앱의 권한 상세가 열립니다</span></h2>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: #9AA4B2">
+<span><span class="chip" style="color: #4C9AFF; background: rgba(76,154,255,0.14)">P</span> 제공</span>
+<span><span class="chip" style="color: #3FB950; background: rgba(63,185,80,0.14)">S</span> 구독</span>
+<span><span class="chip" style="color: #B48CFF; background: rgba(180,140,255,0.14)">C</span> 메서드 호출</span>
+<span><span class="chip" style="color: #9AA4B2; background: rgba(154,164,178,0.10)">미사용</span> 7일 0회</span>
+<span><span class="chip" style="color: #F85149; background: rgba(248,81,73,0.14)">거부</span> 권한 없이 시도</span>
+</div>
+</div>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 900px; table-layout: fixed">
+<thead><tr><th style="width: 130px">앱 \ 서비스</th><sc-for list="{{svcs}}" as="s" hint-placeholder-count="7"><th style="text-align: center; font-size: 11px">{{s}}</th></sc-for></tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="7">
+<tr style="background: {{r.rowBg}}"><td class="mono" style="font-size: 12px; vertical-align: middle">{{r.app}}</td>
+<sc-for list="{{r.cells}}" as="c" hint-placeholder-count="7"><td style="padding: 4px"><button type="button" class="cell" onClick="{{c.pick}}" aria-label="{{c.aria}}" style="background: {{c.bg}}; color: {{c.fg}}; border-color: {{c.bd}}">{{c.v}}</button></td></sc-for>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" aria-labelledby="ap-t" style="flex: 3 1 560px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px">
+<h2 id="ap-t" class="h2" style="margin: 0"><span class="mono">{{app}}</span> 권한 상세</h2>
+<span class="muted" style="font-size: 12px">Execution Manifest: <span class="mono">{{appFile}}</span></span>
+</div>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 640px">
+<thead><tr><th>서비스 · 인스턴스</th><th>권한</th><th>항목</th><th>Manifest 근거</th><th style="text-align: right">7일 사용</th><th>상태</th></tr></thead>
+<tbody>
+<sc-for list="{{grants}}" as="g" hint-placeholder-count="4">
+<tr><td><div style="font-weight: 500">{{g.svc}}</div><div class="mono muted" style="font-size: 11px">{{g.id}}</div></td><td><span class="chip" style="color: {{g.kFg}}; background: {{g.kBg}}">{{g.kind}}</span></td><td class="mono" style="font-size: 12px; color: #C9D1D9">{{g.items}}</td><td class="mono" style="font-size: 12px; color: #9AA4B2">{{g.src}}</td><td class="mono" style="font-size: 12px; text-align: right">{{g.use}}</td><td><span class="chip" style="color: {{g.sFg}}; background: {{g.sBg}}">{{g.st}}</span></td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 13px"><a href="SEC-IAM.html">이 앱의 거부 이벤트</a><a href="COM.html">실제 통신 보기</a><a href="MF.html">Manifest 원문</a></div>
+</section>
+
+<section class="card" aria-labelledby="df-t" style="flex: 2 1 380px">
+<h2 id="df-t" class="h2">배포본 ↔ 저장소 권한 차이 <span class="sub">2건</span></h2>
+<div class="mono" style="background: #0B0E12; border: 1px solid #1E252F; border-radius: 8px; font-size: 12px; overflow-x: auto">
+<sc-for list="{{diff}}" as="l" hint-placeholder-count="8"><div style="padding: 3px 12px; white-space: pre; background: {{l.bg}}; color: {{l.fg}}">{{l.t}}</div></sc-for>
+</div>
+<div style="font-size: 13px; margin-top: 10px">MapService 권한은 저장소에 이미 고쳐져 있지만 아직 배포되지 않았습니다. 접근 거부 화면의 <span class="mono">planning_app</span> 214회 거부가 이 때문입니다.</div>
+</section>
+</div>
+
+<section class="card" aria-labelledby="mp-t">
+<h2 id="mp-t" class="h2">최소 권한 제안 <span class="sub">7일간 한 번도 쓰지 않은 허용 권한</span></h2>
+<sc-for list="{{unused}}" as="u" hint-placeholder-count="3">
+<label style="display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #1E252F; font-size: 13px; cursor: pointer">
+<input type="checkbox" checked="{{u.on}}" onChange="{{u.toggle}}" style="width: 18px; height: 18px">
+<span class="mono" style="flex: 1">{{u.text}}</span>
+<span class="muted" style="font-size: 12px">{{u.note}}</span>
+</label>
+</sc-for>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px">
+<button type="button" class="btn" onClick="{{makeDraft}}">선택한 {{chkCount}}건으로 Manifest 변경 제안 만들기</button>
+<sc-if value="{{made}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; color: #3FB950">변경 제안 초안을 만들었습니다 (시뮬레이션). 담당자 검토 후 저장소에 반영됩니다.</span></sc-if>
+</div>
+</section>
+
+</div>
+</div>
+</script>
+<script>
+window.__DC_PROPS = {"$preview":{"width":1440,"height":1500}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { app: 'planning_app', chk: { u1: true, u2: true, u3: true }, made: false };
+  }
+  renderVals() {
+    const { app, chk, made } = this.state;
+    const ME = 'SEC-PERM';
+    const TABS = [['SEC', '개요'], ['SEC-IAM', '접근 거부'], ['SEC-PERM', '권한 매트릭스'], ['SEC-SECOC', 'SecOC'], ['SEC-BOOT', 'Secure Boot'], ['SEC-CERT', '인증서·키'], ['SEC-IDS', 'IDS 사건'], ['SEC-AUDIT', '감사 로그']];
+    const tabs = TABS.map(([f, l]) => ({ href: f === ME ? '#' : f + '.html', label: l, fg: f === ME ? '#E6EAF0' : '#9AA4B2', line: f === ME ? '#4C9AFF' : 'transparent' }));
+    const svcs = ['ObjectList', 'Trajectory', 'VehicleState', 'InferenceResult', 'MapService', 'DiagEvent', 'planning.db'];
+    const ids = { ObjectList: '0x1001:1', Trajectory: '0x1101:1', VehicleState: '0x2001:1', InferenceResult: '0x3001:1', MapService: '0x5001:1', DiagEvent: '0x4001:1', 'planning.db': 'PER KVS' };
+    const G = {
+      perception_app: [['ObjectList', 'P', 'event objects', 'perception.exec.json:41', 1814400], ['InferenceResult', 'S', 'event result', 'perception.exec.json:52', 907200], ['VehicleState', 'S', 'event state', 'perception.exec.json:58', 0]],
+      planning_app: [['ObjectList', 'S', 'event objects', 'planning.exec.json:33', 1814400], ['Trajectory', 'P', 'event traj', 'planning.exec.json:40', 3024000], ['VehicleState', 'S', 'event state', 'planning.exec.json:47', 6048000], ['MapService', 'X', 'call getTile', '— (누락)', -214], ['planning.db', 'RW', 'read, write', 'planning.exec.json:66', 12406]],
+      control_app: [['Trajectory', 'S', 'event traj', 'control.exec.json:28', 3024000], ['VehicleState', 'P', 'event state', 'control.exec.json:35', 6048000]],
+      hmi_bridge: [['VehicleState', 'S', 'event state', 'hmi.exec.json:22', 6048000], ['MapService', 'C', 'call getTile', 'hmi.exec.json:30', 4120], ['Trajectory', 'X', 'subscribe', '—', -38], ['DiagEvent', 'S', 'event dtc', 'hmi.exec.json:37', 0]],
+      cloud_gw: [['DiagEvent', 'S', 'event dtc', 'cloud_gw.exec.json:19', 604], ['VehicleState', 'X', 'subscribe', '—', -12]],
+      ai_infer_svc: [['InferenceResult', 'P', 'event result', 'ai_infer.exec.json:24', 907200], ['ObjectList', 'S', 'event objects', 'ai_infer.exec.json:31', 0]],
+      diag_tool: [['DiagEvent', 'P', 'event dtc', 'diag_tool.exec.json:15', 604], ['planning.db', 'R', 'read', 'diag_tool.exec.json:27', 30]]
+    };
+    const KC = { P: ['#4C9AFF', 'rgba(76,154,255,0.14)'], S: ['#3FB950', 'rgba(63,185,80,0.14)'], C: ['#B48CFF', 'rgba(180,140,255,0.14)'], R: ['#3FB9A8', 'rgba(63,185,168,0.14)'], RW: ['#3FB9A8', 'rgba(63,185,168,0.14)'], X: ['#F85149', 'rgba(248,81,73,0.14)'] };
+    const fmt = (n) => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : (n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n));
+    const rows = Object.keys(G).map(a => ({
+      app: a, rowBg: a === app ? 'rgba(76,154,255,0.08)' : 'transparent',
+      cells: svcs.map(s => {
+        const g = G[a].find(x => x[0] === s);
+        const pick = () => this.setState({ app: a });
+        if (!g) return { v: '·', fg: '#5A6472', bg: 'transparent', bd: '#1E252F', pick, aria: a + ' ' + s + ' 권한 없음' };
+        if (g[1] === 'X') return { v: '거부 ' + (-g[4]), fg: '#F85149', bg: 'rgba(248,81,73,0.14)', bd: '#6B2A27', pick, aria: a + ' ' + s + ' 거부' };
+        if (g[4] === 0) return { v: g[1] + ' 미사용', fg: '#9AA4B2', bg: 'rgba(154,164,178,0.08)', bd: '#3A424E', pick, aria: a + ' ' + s + ' 미사용 권한' };
+        return { v: g[1], fg: KC[g[1]][0], bg: KC[g[1]][1], bd: '#2A313C', pick, aria: a + ' ' + s + ' ' + g[1] };
+      })
+    }));
+    const KN = { P: '제공', S: '구독', C: '호출', R: '읽기', RW: '읽기·쓰기', X: '없음' };
+    const grants = G[app].map(g => {
+      const st = g[1] === 'X' ? ['권한 없음 · 거부 ' + (-g[4]) + '회', 'crit'] : (g[4] === 0 ? ['미사용 (과다 권한)', 'warn'] : ['사용 중', 'ok']);
+      const T = { ok: ['#3FB950', 'rgba(63,185,80,0.14)'], warn: ['#E3A008', 'rgba(227,160,8,0.14)'], crit: ['#F85149', 'rgba(248,81,73,0.14)'] };
+      return { svc: g[0], id: ids[g[0]], kind: KN[g[1]], kFg: KC[g[1]][0], kBg: KC[g[1]][1], items: g[2], src: g[3], use: g[4] < 0 ? '—' : fmt(g[4]), st: st[0], sFg: T[st[1]][0], sBg: T[st[1]][1] };
+    });
+    const D = [
+      ['  grant MapService 0x5001:1', ' '], ['-   call.getTile: [hmi_bridge]', '-'], ['+   call.getTile: [hmi_bridge, planning_app]', '+'], ['', ' '],
+      ['  grant ObjectList 0x1001:1', ' '], ['-   subscribe: [planning_app, safety_mon, ai_infer_svc]', '-'], ['+   subscribe: [planning_app, safety_mon]', '+']
+    ];
+    const diff = D.map(d => ({ t: d[0] || ' ', fg: d[1] === '+' ? '#7EE2A8' : (d[1] === '-' ? '#FF9B93' : '#C9D1D9'), bg: d[1] === '+' ? 'rgba(63,185,80,0.10)' : (d[1] === '-' ? 'rgba(248,81,73,0.08)' : 'transparent') }));
+    const U = [
+      ['u1', 'perception_app → VehicleState 구독', '7일 0회 · 설계 문서에 사용처 없음'],
+      ['u2', 'ai_infer_svc → ObjectList 구독', '7일 0회 · 저장소에서는 이미 제거됨'],
+      ['u3', 'hmi_bridge → DiagEvent 구독', '7일 0회 · 진단 화면 미출시']
+    ];
+    const unused = U.map(u => ({ text: u[1], note: u[2], on: !!chk[u[0]], toggle: () => this.setState({ chk: { ...this.state.chk, [u[0]]: !this.state.chk[u[0]] }, made: false }) }));
+    const chkCount = U.filter(u => chk[u[0]]).length;
+    const total = Object.values(G).reduce((a, g) => a + g.filter(x => x[1] !== 'X').length, 0);
+    const kpis = [
+      { label: '정의된 권한', v: String(total), sub: '7개 앱 · 7개 서비스', c: '#E6EAF0' },
+      { label: '미사용 권한', v: '3', sub: '7일간 0회 → 제거 후보', c: '#E3A008' },
+      { label: '권한 없이 시도', v: '3', sub: '앱·서비스 칸 기준', c: '#F85149' },
+      { label: '저장소와 차이', v: '2', sub: '배포 대기 변경', c: '#E3A008' }
+    ];
+    return {
+      tabs, svcs, rows, app, appFile: (G[app][0][3] || '').split(':')[0], grants, diff, unused, chkCount: String(chkCount), kpis, made,
+      makeDraft: () => this.setState({ made: true })
+    };
+  }
+}
+window.__DC_Component = Component;
+</script>
+</body>
+</html>

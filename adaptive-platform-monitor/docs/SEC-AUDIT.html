@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security 감사 로그</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.btn:disabled{color:#8B95A3;cursor:default}
+.sel{background:#0E1116;color:#E6EAF0;border:1px solid #2A313C;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;min-height:40px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C;white-space:nowrap}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #1E252F;font-size:13px}
+.rowbtn{background:none;border:0;padding:0;color:#8AB8FF;font:inherit;font-size:12px;cursor:pointer;min-height:32px}
+</style>
+<script src="./runtime.js"></script>
+</head>
+<body>
+<script type="text/x-dc-template" id="dc-template">
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22">
+<a href="Main.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div class="muted" style="font-size: 12px">Security / SEC-07 · SEC-S05, S08</div>
+<h1 style="margin: 0; font-size: 18px">감사 로그 · 접근 관리</h1>
+</div>
+<span class="muted" style="font-size: 12px">모니터에서 일어난 모든 조작 · 추가만 가능한 해시 체인</span>
+</header>
+<nav aria-label="Security 메뉴" style="display: flex; gap: 2px; padding: 0 24px; background: #161B22; border-bottom: 1px solid #2A313C; overflow-x: auto">
+<sc-for list="{{tabs}}" as="b" hint-placeholder-count="8"><a href="{{b.href}}" style="padding: 12px 14px; white-space: nowrap; text-decoration: none; font-size: 13px; color: {{b.fg}}; border-bottom: 2px solid {{b.line}}">{{b.label}}</a></sc-for>
+</nav>
+
+<div style="padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 20px">
+
+<section aria-label="무결성 상태" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 14px 16px; border-radius: 10px; border: 1px solid {{ig.bd}}; background: {{ig.bg}}">
+<div style="flex: 1 1 320px"><div style="font-weight: 700; color: {{ig.fg}}">{{ig.title}}</div><div style="font-size: 13px; color: #C9D1D9">{{ig.text}}</div>
+<sc-if value="{{ig.running}}" hint-placeholder-val="{{false}}"><div style="height: 6px; border-radius: 3px; background: #1E252F; overflow: hidden; margin-top: 8px; max-width: 360px"><div style="height: 6px; width: {{ig.prog}}; background: #4C9AFF"></div></div></sc-if></div>
+<button type="button" class="btn" onClick="{{verify}}" disabled="{{ig.running}}">지금 검증</button>
+<button type="button" class="btn" onClick="{{tamper}}" disabled="{{tampered}}" style="color: #E3A008">DB 변조 시험</button>
+<button type="button" class="btn" onClick="{{restore}}">원상 복구</button>
+</section>
+
+<section class="card" aria-label="필터" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end">
+<div style="display: flex; flex-direction: column; gap: 4px"><span class="muted" style="font-size: 12px">동작</span><div style="display: flex; gap: 4px; flex-wrap: wrap"><sc-for list="{{kindBtns}}" as="s" hint-placeholder-count="5"><button type="button" class="btn" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="min-height: 36px; font-size: 12px; padding: 0 12px; background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for></div></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><span class="muted" style="font-size: 12px">결과</span><div style="display: flex; gap: 4px; flex-wrap: wrap"><sc-for list="{{resBtns}}" as="s" hint-placeholder-count="3"><button type="button" class="btn" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="min-height: 36px; font-size: 12px; padding: 0 12px; background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for></div></div>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9AA4B2">사용자<select class="sel"><option>전체</option><option>kim</option><option>lee</option><option>park</option><option>choi</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9AA4B2">기간<select class="sel"><option>오늘</option><option>최근 7일</option><option>최근 30일</option></select></label>
+<button type="button" class="btn">감사 보고서 내보내기</button>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" aria-labelledby="al-t" style="flex: 3 1 600px">
+<h2 id="al-t" class="h2">기록 <span class="sub">{{count}}건 표시 · 전체 12,480건</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 820px">
+<thead><tr><th>#</th><th>시각</th><th>사용자</th><th>동작</th><th>대상</th><th>결과</th><th>승인자</th><th>체인</th><th></th></tr></thead>
+<tbody>
+<sc-for list="{{recs}}" as="r" hint-placeholder-count="10">
+<tr style="background: {{r.rowBg}}">
+<td class="mono" style="font-size: 12px; color: #9AA4B2">{{r.no}}</td>
+<td class="mono" style="font-size: 12px; color: #9AA4B2">{{r.time}}</td>
+<td><span class="mono" style="font-size: 12px">{{r.user}}</span> <span class="muted" style="font-size: 11px">{{r.role}}</span></td>
+<td style="font-size: 13px">{{r.act}}</td>
+<td class="mono" style="font-size: 12px; color: #C9D1D9">{{r.target}}</td>
+<td><span class="chip" style="color: {{r.fg}}; background: {{r.bg}}">{{r.res}}</span></td>
+<td class="mono" style="font-size: 12px; color: #9AA4B2">{{r.appr}}</td>
+<td class="mono" style="font-size: 12px; color: {{r.chC}}">{{r.ch}}</td>
+<td><button type="button" class="rowbtn" onClick="{{r.pick}}">{{r.pickLabel}}</button></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<aside style="flex: 2 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<section class="card" aria-labelledby="rd-t">
+<h2 id="rd-t" class="h2">기록 #{{d.no}}</h2>
+<div class="kv"><span class="muted">시각</span><span class="mono">2026-11-10 {{d.time}}</span></div>
+<div class="kv"><span class="muted">사용자 · 역할</span><span>{{d.user}} · {{d.role}}</span></div>
+<div class="kv"><span class="muted">접속</span><span class="mono">{{d.ip}}</span></div>
+<div class="kv"><span class="muted">동작</span><span>{{d.act}}</span></div>
+<div class="kv"><span class="muted">결과</span><span style="color: {{d.fg}}">{{d.res}}</span></div>
+<div class="kv"><span class="muted">이전 해시</span><span class="mono" style="font-size: 12px">{{d.prev}}</span></div>
+<div class="kv"><span class="muted">이 기록 해시</span><span class="mono" style="font-size: 12px; color: {{d.chC}}">{{d.hash}}</span></div>
+<div class="muted" style="font-size: 12px; margin: 10px 0 4px">요청 원문</div>
+<div class="mono" style="background: #0B0E12; border: 1px solid #1E252F; border-radius: 6px; padding: 10px; font-size: 11px; white-space: pre-wrap; color: #C9D1D9">{{d.raw}}</div>
+</section>
+
+<section class="card" aria-labelledby="ss-t">
+<h2 id="ss-t" class="h2">현재 접속 세션</h2>
+<sc-for list="{{sessions}}" as="s" hint-placeholder-count="3"><div class="kv"><span><span class="mono">{{s.u}}</span> <span class="muted" style="font-size: 12px">{{s.r}}</span></span><span class="mono muted" style="font-size: 12px">{{s.m}}</span></div></sc-for>
+</section>
+
+<section class="card" aria-labelledby="rl-t">
+<h2 id="rl-t" class="h2">역할별 권한</h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 320px">
+<thead><tr><th>동작</th><th style="text-align: center">조회자</th><th style="text-align: center">운영자</th><th style="text-align: center">관리자</th></tr></thead>
+<tbody>
+<sc-for list="{{roles}}" as="r" hint-placeholder-count="6">
+<tr><td style="font-size: 12px">{{r.a}}</td><td style="text-align: center; font-size: 12px; color: {{r.c1}}">{{r.v1}}</td><td style="text-align: center; font-size: 12px; color: {{r.c2}}">{{r.v2}}</td><td style="text-align: center; font-size: 12px; color: {{r.c3}}">{{r.v3}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+</aside>
+</div>
+
+</div>
+</div>
+</script>
+<script>
+window.__DC_PROPS = {"$preview":{"width":1440,"height":1500}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 12480, kind: 'all', res: 'all', prog: -1, tampered: false, lastVerify: '17:00:00', result: 'ok' };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => {
+      const p = this.state.prog;
+      if (p < 0) return;
+      if (p >= 100) { this.setState({ prog: -1, lastVerify: '방금', result: this.state.tampered ? 'broken' : 'ok' }); return; }
+      this.setState({ prog: p + 25 });
+    }, 700);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { sel, kind, res, prog, tampered, lastVerify, result } = this.state;
+    const ME = 'SEC-AUDIT';
+    const TABS = [['SEC', '개요'], ['SEC-IAM', '접근 거부'], ['SEC-PERM', '권한 매트릭스'], ['SEC-SECOC', 'SecOC'], ['SEC-BOOT', 'Secure Boot'], ['SEC-CERT', '인증서·키'], ['SEC-IDS', 'IDS 사건'], ['SEC-AUDIT', '감사 로그']];
+    const tabs = TABS.map(([f, l]) => ({ href: f === ME ? '#' : f + '.html', label: l, fg: f === ME ? '#E6EAF0' : '#9AA4B2', line: f === ME ? '#4C9AFF' : 'transparent' }));
+    const hx = (n) => { let h = (n * 2654435761) >>> 0; const a = h.toString(16).padStart(8, '0'); h = (h ^ (n * 40503)) >>> 0; return a + '…' + h.toString(16).padStart(8, '0').slice(0, 4); };
+    const R = [
+      [12480, '17:31:02', 'kim', '운영자', 'set', '판정 변경 → IDS 사건', 'SEC-01 이벤트 e1', '허용', '—', '10.20.4.17'],
+      [12479, '17:30:07', 'system', '자동', 'set', 'IDS 사건 생성', 'INC-031', '허용', '—', '내부'],
+      [12478, '17:12:40', 'kim', '운영자', 'ctrl', '로그 레벨 변경 INFO → DEBUG', 'planning_app (PLAN)', '허용', 'park', '10.20.4.17'],
+      [12477, '16:55:02', 'lee', '조회자', 'ctrl', '프로세스 재시작 요청', 'ai_infer_svc', '거부', '—', '10.20.6.41'],
+      [12476, '16:40:11', 'park', '관리자', 'set', '알람 규칙 변경 (지속 10초)', 'CPU 과부하', '허용', '—', '10.20.4.9'],
+      [12475, '15:30:18', 'kim', '운영자', 'export', '녹화 세션 내보내기 (워터마크)', 'REC #42', '허용', '—', '10.20.4.17'],
+      [12474, '15:02:44', 'choi', '조회자', 'login', 'SSO 로그인', '웹 UI', '허용', '—', '10.20.7.3'],
+      [12473, '14:51:09', '알 수 없음', '—', 'login', '로그인 실패 3회 → 10분 잠금', '웹 UI', '거부', '—', '10.20.9.88'],
+      [12472, '14:20:30', 'park', '관리자', 'set', '역할 변경 조회자 → 운영자', 'kim', '허용', 'jung', '10.20.4.9'],
+      [12471, '13:05:55', 'kim', '운영자', 'export', 'DLT 로그 내보내기 (1시간)', 'ADCU-01', '허용', '—', '10.20.4.17']
+    ];
+    const broken = result === 'broken';
+    const recsAll = R.map(r => {
+      const isT = tampered && r[0] === 12471;
+      const after = broken && r[0] >= 12471;
+      return { no: r[0], time: r[1], user: r[2], role: r[3], kind: r[4], act: isT ? 'DLT 로그 내보내기 (1시간)' : r[5], target: r[6], res: isT ? '허용' : r[7], appr: r[8], ip: r[9],
+        hash: hx(r[0] + (isT ? 7 : 0)), prev: hx(r[0] - 1), chain: broken ? (r[0] === 12471 ? '불일치' : (after ? '검증 불가' : '정상')) : '정상' };
+    });
+    const list = recsAll.filter(r => (kind === 'all' || r.kind === kind) && (res === 'all' || r.res === res));
+    const RC = { '허용': ['#3FB950', 'rgba(63,185,80,0.14)'], '거부': ['#F85149', 'rgba(248,81,73,0.14)'] };
+    const recs = list.map(r => ({ ...r, no: String(r.no), fg: RC[r.res][0], bg: RC[r.res][1], ch: r.chain === '정상' ? '✓ ' + r.hash.slice(0, 6) : r.chain, chC: r.chain === '정상' ? '#9AA4B2' : '#F85149',
+      rowBg: r.no === sel ? 'rgba(76,154,255,0.10)' : (r.chain === '불일치' ? 'rgba(248,81,73,0.08)' : 'transparent'), pickLabel: r.no === sel ? '선택됨' : '상세', pick: () => this.setState({ sel: r.no }) }));
+    const cur = recsAll.find(r => r.no === sel);
+    const raw = JSON.stringify({ seq: cur.no, user: cur.user, role: cur.role, action: cur.act, target: cur.target, approver: cur.appr === '—' ? null : cur.appr, result: cur.res, ecu: 'ADCU-01' }, null, 2);
+    const d = { ...cur, no: String(cur.no), fg: RC[cur.res][0], chC: cur.chain === '정상' ? '#E6EAF0' : '#F85149', raw };
+    const running = prog >= 0;
+    const ig = running ? { title: '해시 체인 검증 중', text: '레코드를 처음부터 차례로 다시 계산하고 있습니다.', fg: '#4C9AFF', bd: '#2A4A75', bg: 'rgba(76,154,255,0.08)', running: true, prog: prog + '%' }
+      : (broken ? { title: '무결성 위반 감지', text: '#12471 레코드의 해시가 다음 레코드에 저장된 값과 다릅니다. 이후 9건은 검증할 수 없습니다. 보안 담당자에게 자동 통보했습니다 (시뮬레이션).', fg: '#F85149', bd: '#6B2A27', bg: 'rgba(248,81,73,0.10)', running: false, prog: '0%' }
+      : { title: '해시 체인 정상', text: '레코드 12,480건 · 마지막 검증 ' + lastVerify + (tampered ? ' · DB가 변경됐습니다. 다시 검증해 보세요.' : ' · 1시간마다 자동 검증'), fg: '#3FB950', bd: '#2B5D36', bg: 'rgba(63,185,80,0.08)', running: false, prog: '0%' });
+    const K = [['all', '전체'], ['login', '로그인'], ['export', '내보내기'], ['ctrl', '원격 제어'], ['set', '설정·판정']];
+    const kindBtns = K.map(([k, l]) => ({ label: l, pressed: k === kind ? 'true' : 'false', pick: () => this.setState({ kind: k }), bg: k === kind ? '#4C9AFF' : '#0E1116', fg: k === kind ? '#0E1116' : '#C9D1D9' }));
+    const RS = [['all', '전체'], ['허용', '허용'], ['거부', '거부']];
+    const resBtns = RS.map(([k, l]) => ({ label: l, pressed: k === res ? 'true' : 'false', pick: () => this.setState({ res: k }), bg: k === res ? '#4C9AFF' : '#0E1116', fg: k === res ? '#0E1116' : '#C9D1D9' }));
+    const sessions = [{ u: 'kim', r: '운영자', m: '10.20.4.17 · 2시간 전' }, { u: 'park', r: '관리자', m: '10.20.4.9 · 50분 전' }, { u: 'choi', r: '조회자', m: '10.20.7.3 · 2시간 전' }];
+    const Y = ['허용', '#3FB950'], N = ['—', '#5A6472'], A = ['승인 필요', '#E3A008'];
+    const RL = [['화면 조회', Y, Y, Y], ['로그·녹화 내보내기', N, Y, Y], ['로그 레벨 변경', N, A, Y], ['원격 제어 (테스트 빌드)', N, A, A], ['알람·IDS 규칙 변경', N, N, Y], ['역할 변경', N, N, A]];
+    const roles = RL.map(r => ({ a: r[0], v1: r[1][0], c1: r[1][1], v2: r[2][0], c2: r[2][1], v3: r[3][0], c3: r[3][1] }));
+    return {
+      tabs, ig, tampered, recs, count: String(recs.length), d, kindBtns, resBtns, sessions, roles,
+      verify: () => this.setState({ prog: 0 }),
+      tamper: () => this.setState({ tampered: true, result: 'ok', lastVerify: '17:00:00' }),
+      restore: () => this.setState({ tampered: false, result: 'ok', prog: -1, lastVerify: '17:00:00' })
+    };
+  }
+}
+window.__DC_Component = Component;
+</script>
+</body>
+</html>

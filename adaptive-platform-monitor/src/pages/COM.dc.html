@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>COM 통신 토폴로지</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#8AB8FF;border:1px solid #2A4A75;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.node{padding:8px 10px;border-radius:6px;background:#0E1116;border:1px solid #2A313C;font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<a href="Main.dc.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; background: #1E252F; color: #C9D1D9; border-radius: 4px; padding: 2px 6px">COM</span><h1 style="margin: 0; font-size: 18px">통신 · 서비스 토폴로지</h1></div>
+<div class="muted" style="font-size: 12px">ara::com 서비스 연결 · SOME/IP-SD · 이벤트 통계 · E2E</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span class="mono" style="font-size: 12px; color: #9AA4B2">시뮬레이션 T+{{t}}s</span>
+<button type="button" class="btn" onClick="{{toggle}}">{{runLabel}}</button>
+<sc-for list="{{scenarios}}" as="s" hint-placeholder-count="2"><button type="button" class="btn" onClick="{{s.run}}" style="background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for>
+<button type="button" class="btn" onClick="{{reset}}">초기화</button>
+</div>
+</header>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 40px">
+<aside style="flex: 1 1 300px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section class="card" aria-labelledby="sc-t">
+<h2 id="sc-t" class="h2">시나리오 진행</h2>
+<sc-if value="{{noSc}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">상단 시나리오 버튼을 누르면 단계별로 진행됩니다. 지금은 주기적 OfferService와 이벤트 통계가 갱신됩니다.</div></sc-if>
+<sc-if value="{{hasSc}}" hint-placeholder-val="{{false}}">
+<div style="font-size: 13px; font-weight: 500; margin-bottom: 6px">{{scTitle}}</div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; padding: 6px 0"><span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: {{s.dot}}; margin-top: 5px"></span><div><div style="font-size: 13px; color: {{s.fg}}">{{s.text}}</div><div class="mono" style="font-size: 11px; color: #8B95A3">{{s.at}} · {{s.tag}}</div></div></div>
+</sc-for>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="spec-t">
+<h2 id="spec-t" class="h2">기능 명세 <span class="sub">{{specCount}}개</span></h2>
+<sc-for list="{{spec}}" as="f" hint-placeholder-count="8">
+<div style="padding: 9px 0; border-bottom: 1px solid #1E252F">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; color: #8AB8FF">{{f.id}}</span><span style="font-size: 13px; font-weight: 500; flex: 1">{{f.name}}</span><span style="font-size: 10px; color: {{f.pc}}; border: 1px solid {{f.pc}}; border-radius: 10px; padding: 0 6px; white-space: nowrap">{{f.ph}}</span></div>
+<div class="muted" style="font-size: 12px; margin-top: 2px">{{f.desc}}</div>
+</div>
+</sc-for>
+</section>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<section class="card" aria-labelledby="tp-t">
+<h2 id="tp-t" class="h2">서비스 토폴로지 <span class="sub">Provider → 서비스 → Consumer</span><span class="tag">COM-02</span><span class="tag">COM-08</span></h2>
+<div style="overflow-x: auto">
+<div style="min-width: 720px; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{topo}}" as="r" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; gap: 0">
+<div class="node" style="width: 130px; text-align: center; border-color: {{r.pBorder}}; color: {{r.pFg}}">{{r.provider}}</div>
+<div style="flex: 1; height: 2px; background: {{r.line}}; min-width: 30px"></div>
+<div style="padding: 6px 12px; border-radius: 16px; border: 1px solid {{r.line}}; background: {{r.bg}}; text-align: center; min-width: 160px">
+<div style="font-size: 13px; font-weight: 500">{{r.name}}</div>
+<div class="mono" style="font-size: 10px; color: #9AA4B2">{{r.binding}} · {{r.rate}}</div>
+</div>
+<div style="flex: 1; height: 2px; background: {{r.line}}; min-width: 30px"></div>
+<div style="display: flex; flex-direction: column; gap: 4px; width: 150px">
+<sc-for list="{{r.consumers}}" as="c" hint-placeholder-count="2"><div class="node" style="text-align: center">{{c}}</div></sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 12px; color: #9AA4B2">
+<span><span style="display: inline-block; width: 18px; height: 2px; background: #3FB950; vertical-align: middle"></span> 정상</span>
+<span><span style="display: inline-block; width: 18px; height: 2px; background: #E3A008; vertical-align: middle"></span> 지연·누락</span>
+<span><span style="display: inline-block; width: 18px; height: 2px; background: #F85149; vertical-align: middle"></span> 연결 끊김</span>
+</div>
+</section>
+
+<section class="card" aria-labelledby="st-t">
+<h2 id="st-t" class="h2">이벤트 통계 <span class="tag">COM-01</span><span class="tag">COM-04</span><span class="tag">COM-05</span><span class="tag">COM-07</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 760px">
+<thead><tr><th>서비스 · ID</th><th>바인딩</th><th>상태</th><th style="text-align: right">주기</th><th style="text-align: right">p50</th><th style="text-align: right">p99</th><th style="text-align: right">누락률</th><th style="text-align: right">E2E 오류</th></tr></thead>
+<tbody>
+<sc-for list="{{stats}}" as="s" hint-placeholder-count="5">
+<tr><td><div style="font-weight: 500">{{s.name}}</div><div class="mono" style="font-size: 11px; color: #9AA4B2">{{s.id}}</div></td><td style="font-size: 12px; color: #C9D1D9">{{s.binding}}</td><td><span class="chip" style="color: {{s.sfg}}; background: {{s.sbg}}">{{s.state}}</span></td><td class="mono" style="font-size: 12px; text-align: right">{{s.rate}}</td><td class="mono" style="font-size: 12px; text-align: right">{{s.p50}}</td><td class="mono" style="font-size: 12px; text-align: right; color: {{s.p99c}}">{{s.p99}}</td><td class="mono" style="font-size: 12px; text-align: right; color: {{s.dropc}}">{{s.drop}}</td><td class="mono" style="font-size: 12px; text-align: right; color: {{s.e2ec}}">{{s.e2e}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<section class="card" aria-labelledby="sd-t" style="flex: 3 1 420px">
+<h2 id="sd-t" class="h2">SOME/IP-SD 메시지 흐름 <span class="tag">COM-03</span></h2>
+<div style="background: #0B0E12; border: 1px solid #1E252F; border-radius: 8px; overflow-x: auto">
+<div style="min-width: 520px">
+<sc-for list="{{sd}}" as="m" hint-placeholder-count="8">
+<div class="mono" style="display: flex; gap: 12px; padding: 6px 12px; border-bottom: 1px solid #161B22; font-size: 12px">
+<span style="color: #8B95A3; width: 64px; flex: none">{{m.time}}</span>
+<span style="color: {{m.fg}}; width: 132px; flex: none">{{m.type}}</span>
+<span style="color: #E6EAF0; flex: 1">{{m.text}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+<section class="card" aria-labelledby="bw-t" style="flex: 2 1 280px">
+<h2 id="bw-t" class="h2">인터페이스 대역폭 <span class="tag">COM-09</span></h2>
+<sc-for list="{{bw}}" as="b" hint-placeholder-count="3">
+<div style="margin-bottom: 12px">
+<div style="display: flex; justify-content: space-between; font-size: 12px"><span class="mono" style="color: #C9D1D9">{{b.name}}</span><span class="mono" style="color: {{b.color}}">{{b.text}}</span></div>
+<div style="height: 6px; border-radius: 3px; background: #1E252F; overflow: hidden; margin-top: 4px"><div style="height: 6px; width: {{b.w}}; background: {{b.color}}"></div></div>
+</div>
+</sc-for>
+</section>
+</div>
+
+<section class="card" aria-labelledby="pk-t">
+<h2 id="pk-t" class="h2">패킷 디코딩 <span class="sub">마지막 캡처 · ObjectList Notification</span><span class="tag">COM-06</span></h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px">
+<sc-for list="{{pkt}}" as="p" hint-placeholder-count="8">
+<div style="background: #0E1116; border: 1px solid #1E252F; border-radius: 6px; padding: 8px 10px"><div class="muted" style="font-size: 11px">{{p.k}}</div><div class="mono" style="font-size: 13px">{{p.v}}</div></div>
+</sc-for>
+</div>
+</section>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, running: true, sc: null, s0: 0 };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { if (this.state.running) this.setState({ t: this.state.t + 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, running, sc, s0 } = this.state;
+    const el = sc ? t - s0 : -1;
+    const T = { ok: ['#3FB950', 'rgba(63,185,80,0.14)'], warn: ['#E3A008', 'rgba(227,160,8,0.14)'], crit: ['#F85149', 'rgba(248,81,73,0.14)'], info: ['#4C9AFF', 'rgba(76,154,255,0.14)'], off: ['#9AA4B2', 'rgba(154,164,178,0.10)'] };
+    const tn = (k) => T[k] || T.off;
+    const PH = { MVP: '#4C9AFF', '2단계': '#3FB9A8', '3단계': '#9AA4B2' };
+    const mkSteps = (L) => L.map((s, i) => { const n = L[i + 1]; const st = el < s.at ? 'p' : (n && el >= n.at ? 'd' : 'a'); const c = { d: ['#3FB950', '#C9D1D9', '완료'], a: ['#4C9AFF', '#E6EAF0', '진행 중'], p: ['#3A424E', '#8B95A3', '대기'] }[st]; return { at: '+' + s.at + 's', text: s.text, dot: c[0], fg: c[1], tag: c[2] }; });
+    const clock = (sec) => { const b = 17 * 3600 + 30 * 60 + sec; return [Math.floor(b / 3600), Math.floor(b / 60) % 60, b % 60].map(x => String(x).padStart(2, '0')).join(':'); };
+    const wv = (i, base, amp) => Math.max(0, base + amp * Math.sin(t * 0.9 + i * 1.7));
+    const inR = (a, b) => el >= a && el < b;
+
+    const SC = {
+      stop: { label: 'Provider 중단 → 재연결', steps: [
+        { at: 0, text: 'ai_infer_svc가 StopOfferService(InferenceResult) 송신' },
+        { at: 1, text: 'perception_app: E2E 수신 타임아웃 감지 (300ms)' },
+        { at: 2, text: 'perception_app: FindService 1초 주기 반복' },
+        { at: 5, text: 'ai_infer_svc 재기동 후 OfferService' },
+        { at: 6, text: 'Subscribe → SubscribeAck 교환' },
+        { at: 7, text: '이벤트 수신 재개, 정상화' }
+      ], sd: [
+        { at: 0, type: 'StopOffer', text: 'ai_infer_svc → * : InferenceResult 0x3001:1', k: 'crit' },
+        { at: 2, type: 'FindService', text: 'perception_app → * : InferenceResult', k: 'warn' },
+        { at: 3, type: 'FindService', text: 'perception_app → * : InferenceResult', k: 'warn' },
+        { at: 4, type: 'FindService', text: 'perception_app → * : InferenceResult', k: 'warn' },
+        { at: 5, type: 'OfferService', text: 'ai_infer_svc → * : InferenceResult 0x3001:1 TTL 3s', k: 'info' },
+        { at: 6, type: 'Subscribe', text: 'perception_app → ai_infer_svc : Eventgroup 0x01', k: 'info' },
+        { at: 6, type: 'SubscribeAck', text: 'ai_infer_svc → perception_app : Eventgroup 0x01', k: 'ok' }
+      ]},
+      congest: { label: '네트워크 혼잡 → 지연 증가', steps: [
+        { at: 0, text: 'OTA 다운로드 시작: eth0에 +80Mbps 부하' },
+        { at: 2, text: 'ObjectList p99 4ms → 18ms 상승' },
+        { at: 4, text: 'E2E 카운터 점프 2회: 프레임 누락 감지' },
+        { at: 6, text: 'OTA 트래픽에 QoS 제한 적용' },
+        { at: 8, text: '지연·누락 정상 범위 복귀' }
+      ], sd: [] }
+    };
+    const stopNow = sc === 'stop';
+    const infer = !stopNow || el < 0 ? 'ok' : (el < 5 ? 'down' : (el < 7 ? 'sub' : 'ok'));
+    const cg = sc === 'congest' ? (inR(2, 6) ? 'bad' : (inR(0, 2) || inR(6, 8) ? 'mid' : 'ok')) : 'ok';
+
+    const S = [
+      { name: 'ObjectList', id: '0x1001:1', binding: 'SOME/IP', provider: 'perception_app', consumers: ['planning_app', 'safety_mon'], hz: 30, p50: 1.8, p99: 4.2 },
+      { name: 'Trajectory', id: '0x1101:1', binding: 'IPC (shm)', provider: 'planning_app', consumers: ['control_app'], hz: 50, p50: 0.4, p99: 1.1 },
+      { name: 'VehicleState', id: '0x2001:1', binding: 'SOME/IP', provider: 'control_app', consumers: ['planning_app', 'hmi_bridge'], hz: 100, p50: 0.3, p99: 0.8 },
+      { name: 'InferenceResult', id: '0x3001:1', binding: 'DDS', provider: 'ai_infer_svc', consumers: ['perception_app'], hz: 15, p50: 2.1, p99: 5.5 },
+      { name: 'DiagEvent', id: '0x4001:1', binding: 'SOME/IP', provider: 'diag_mgr', consumers: ['cloud_gw'], hz: 1, p50: 0.6, p99: 1.4 }
+    ];
+    const rows = S.map((s, i) => {
+      let k = 'ok', state = 'Subscribed', rate = wv(i, s.hz, s.hz * 0.02), p99 = wv(i + 3, s.p99, s.p99 * 0.08), drop = 0, e2e = 0;
+      if (s.name === 'InferenceResult') {
+        if (infer === 'down') { k = 'crit'; state = '미제공'; rate = 0; }
+        if (infer === 'sub') { k = 'info'; state = 'Subscribing'; rate = 0; }
+      }
+      if (s.name === 'ObjectList' && sc === 'congest') {
+        if (cg === 'bad') { k = 'warn'; state = '지연'; p99 = wv(2, 18, 2); drop = 1.8; }
+        if (cg === 'mid') { p99 = wv(2, 8, 1); drop = 0.3; k = 'warn'; state = '부하'; }
+        e2e = el >= 4 ? 2 : 0;
+      }
+      return { ...s, k, state, rate, p99, drop, e2e };
+    });
+    const topo = rows.map(r => ({
+      provider: r.provider, name: r.name, binding: r.binding, rate: r.rate ? r.rate.toFixed(0) + ' Hz' : '0 Hz', consumers: r.consumers,
+      line: r.k === 'ok' ? '#3FB950' : tn(r.k)[0], bg: r.k === 'ok' ? '#0E1116' : tn(r.k)[1],
+      pBorder: r.k === 'crit' ? '#F85149' : '#2A313C', pFg: r.k === 'crit' ? '#F85149' : '#E6EAF0'
+    }));
+    const stats = rows.map(r => ({
+      name: r.name, id: r.id, binding: r.binding, state: r.state, sfg: tn(r.k)[0], sbg: tn(r.k)[1],
+      rate: r.rate ? r.rate.toFixed(1) + ' Hz' : '—', p50: r.rate ? r.p50.toFixed(1) + ' ms' : '—', p99: r.rate ? r.p99.toFixed(1) + ' ms' : '—',
+      p99c: r.p99 > 10 ? '#E3A008' : '#E6EAF0', drop: r.drop.toFixed(1) + '%', dropc: r.drop > 0.5 ? '#E3A008' : '#9AA4B2',
+      e2e: String(r.e2e), e2ec: r.e2e > 0 ? '#F85149' : '#9AA4B2'
+    }));
+
+    const cyc = ['ObjectList', 'VehicleState', 'DiagEvent', 'InferenceResult'];
+    const prov = { ObjectList: 'perception_app', VehicleState: 'control_app', DiagEvent: 'diag_mgr', InferenceResult: 'ai_infer_svc' };
+    const list = [];
+    for (let k = t; k >= Math.max(0, t - 30) && list.length < 20; k--) {
+      if (k % 3 === 0) {
+        const n = cyc[(k / 3) % cyc.length];
+        const e = k - s0;
+        const blocked = stopNow && n === 'InferenceResult' && e >= 0 && e < 5;
+        if (!blocked) list.push({ tick: k, type: 'OfferService', text: prov[n] + ' → * : ' + n + ' (주기)', k: 'off' });
+      }
+    }
+    if (sc) SC[sc].sd.forEach(m => { if (el >= m.at) list.push({ tick: s0 + m.at, type: m.type, text: m.text, k: m.k }); });
+    const sd = list.sort((a, b) => b.tick - a.tick).slice(0, 9).map(m => ({ time: clock(m.tick), type: m.type, text: m.text, fg: m.k === 'off' ? '#9AA4B2' : tn(m.k)[0] }));
+
+    const eth0 = cg === 'bad' || (sc === 'congest' && inR(0, 2)) ? wv(1, 118, 4) : (cg === 'mid' ? wv(1, 60, 3) : wv(1, 38, 3));
+    const bw = [
+      { name: 'eth0 (차량 이더넷)', v: eth0, max: 100 },
+      { name: 'eth1.20 (VLAN 진단)', v: wv(2, 2.4, 0.5), max: 100 },
+      { name: 'lo / shm (IPC)', v: wv(3, 210, 12), max: 1000 }
+    ].map(b => { const pct = Math.min(100, b.v / b.max * 100); return { name: b.name, text: b.v.toFixed(1) + ' Mbps', w: pct + '%', color: pct >= 90 ? '#F85149' : (pct >= 70 ? '#E3A008' : '#4C9AFF') }; });
+
+    const objCount = 8 + Math.round(4 + 3 * Math.sin(t * 0.5));
+    const pkt = [
+      { k: 'Service ID', v: '0x1001' }, { k: 'Method/Event ID', v: '0x8001' },
+      { k: 'Length', v: String(16 + objCount * 24) + ' B' }, { k: 'Client · Session', v: '0x0000 · 0x' + (4096 + t).toString(16).toUpperCase() },
+      { k: 'Message Type', v: 'NOTIFICATION' }, { k: 'Return Code', v: 'E_OK' },
+      { k: 'objects.count', v: String(objCount) }, { k: 'E2E counter / CRC', v: (t % 15) + ' / OK' }
+    ];
+
+    const spec = [
+      ['COM-01', '서비스 인스턴스 목록', 'Offered / Required, 인스턴스 ID, 버전 일치 여부', 'MVP'],
+      ['COM-02', '서비스 토폴로지 맵', 'Provider → 서비스 → Consumer, 끊김·지연 색상 표시', 'MVP'],
+      ['COM-03', 'SD 메시지 흐름', 'Offer / Find / Subscribe / Ack / StopOffer 시퀀스', '2단계'],
+      ['COM-04', '이벤트·메서드 통계', '주기(Hz), 지연 p50/p99, 누락률, 페이로드 크기', 'MVP'],
+      ['COM-05', 'E2E 보호 상태', '카운터 점프, CRC 오류, 타임아웃 횟수', '2단계'],
+      ['COM-06', '패킷 디코딩', 'SOME/IP 헤더와 ARXML 기반 페이로드 필드 해석', '3단계'],
+      ['COM-07', '바인딩별 상태', 'SOME/IP, DDS, IPC(shm)별 연결·오류', '2단계'],
+      ['COM-08', '구독 관계', 'Eventgroup 단위 구독자 목록과 구독 상태', '2단계'],
+      ['COM-09', '인터페이스 대역폭', 'NIC·VLAN별 트래픽, 포화 경고', '2단계']
+    ].map(s => ({ id: s[0], name: s[1], desc: s[2], ph: s[3], pc: PH[s[3]] }));
+
+    const scenarios = Object.keys(SC).map(k => ({ label: SC[k].label, run: () => this.setState({ sc: k, s0: this.state.t, running: true }), bg: sc === k ? '#4C9AFF' : '#0E1116', fg: sc === k ? '#0E1116' : '#E6EAF0' }));
+    return {
+      t, runLabel: running ? '일시정지' : '재생', toggle: () => this.setState({ running: !this.state.running }),
+      reset: () => this.setState({ t: 0, sc: null, s0: 0, running: true }),
+      scenarios, noSc: !sc, hasSc: !!sc, scTitle: sc ? SC[sc].label : '', steps: sc ? mkSteps(SC[sc].steps) : [],
+      spec, specCount: spec.length, topo, stats, sd, bw, pkt
+    };
+  }
+}
+</script>
+</body>
+</html>

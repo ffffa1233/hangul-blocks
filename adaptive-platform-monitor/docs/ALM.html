@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ALM 알람 이벤트</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#8AB8FF;border:1px solid #2A4A75;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.btn:disabled{color:#8B95A3;cursor:default}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+</style>
+<script src="./runtime.js"></script>
+</head>
+<body>
+<script type="text/x-dc-template" id="dc-template">
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<a href="Main.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; background: #1E252F; color: #C9D1D9; border-radius: 4px; padding: 2px 6px">ALM</span><h1 style="margin: 0; font-size: 18px">알람 · 이벤트</h1></div>
+<div class="muted" style="font-size: 12px">알람 목록 · 확인(ACK) · 근본 원인 그룹핑 · 규칙 · 알림 채널</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span class="mono" style="font-size: 12px; color: #9AA4B2">시뮬레이션 T+{{t}}s</span>
+<button type="button" class="btn" onClick="{{toggle}}">{{runLabel}}</button>
+<sc-for list="{{scenarios}}" as="s" hint-placeholder-count="2"><button type="button" class="btn" onClick="{{s.run}}" style="background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for>
+<button type="button" class="btn" onClick="{{reset}}">초기화</button>
+</div>
+</header>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 40px">
+<aside style="flex: 1 1 300px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section class="card" aria-labelledby="sc-t">
+<h2 id="sc-t" class="h2">시나리오 진행</h2>
+<sc-if value="{{noSc}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">상단 시나리오 버튼을 누르면 단계별로 진행됩니다. 알람의 확인 버튼은 지금도 눌러볼 수 있어요.</div></sc-if>
+<sc-if value="{{hasSc}}" hint-placeholder-val="{{false}}">
+<div style="font-size: 13px; font-weight: 500; margin-bottom: 6px">{{scTitle}}</div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; padding: 6px 0"><span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: {{s.dot}}; margin-top: 5px"></span><div><div style="font-size: 13px; color: {{s.fg}}">{{s.text}}</div><div class="mono" style="font-size: 11px; color: #8B95A3">{{s.at}} · {{s.tag}}</div></div></div>
+</sc-for>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="spec-t">
+<h2 id="spec-t" class="h2">기능 명세 <span class="sub">{{specCount}}개</span></h2>
+<sc-for list="{{spec}}" as="f" hint-placeholder-count="6">
+<div style="padding: 9px 0; border-bottom: 1px solid #1E252F">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; color: #8AB8FF">{{f.id}}</span><span style="font-size: 13px; font-weight: 500; flex: 1">{{f.name}}</span><span style="font-size: 10px; color: {{f.pc}}; border: 1px solid {{f.pc}}; border-radius: 10px; padding: 0 6px; white-space: nowrap">{{f.ph}}</span></div>
+<div class="muted" style="font-size: 12px; margin-top: 2px">{{f.desc}}</div>
+</div>
+</sc-for>
+</section>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<div class="card" style="padding: 14px"><div class="muted" style="font-size: 12px">{{k.label}}</div><div class="mono" style="font-size: 22px; font-weight: 500; color: {{k.c}}">{{k.v}}</div></div>
+</sc-for>
+</div>
+
+<section class="card" aria-labelledby="al-t">
+<h2 id="al-t" class="h2">알람 목록 <span class="tag">ALM-01</span><span class="tag">ALM-05</span><span class="tag">ALM-06</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 820px">
+<thead><tr><th>심각도</th><th>내용</th><th>출처</th><th>최초 발생</th><th style="text-align: right">횟수</th><th>상태</th><th>바로가기</th><th>조치</th></tr></thead>
+<tbody>
+<sc-for list="{{alarms}}" as="a" hint-placeholder-count="5">
+<tr style="background: {{a.rowBg}}">
+<td><span class="chip" style="color: {{a.sfg}}; background: {{a.sbg}}">{{a.sev}}</span></td>
+<td style="font-size: 13px">{{a.msg}}</td>
+<td class="mono" style="font-size: 12px; color: #C9D1D9">{{a.src}}</td>
+<td class="mono" style="font-size: 12px; color: #9AA4B2">{{a.time}}</td>
+<td class="mono" style="font-size: 12px; text-align: right">{{a.count}}</td>
+<td style="font-size: 12px; color: {{a.stc}}">{{a.status}}</td>
+<td style="font-size: 12px; white-space: nowrap"><a href="LOG.html">로그</a> · <a href="REC.html">녹화</a></td>
+<td><button type="button" class="btn" onClick="{{a.ack}}" disabled="{{a.ackDisabled}}" style="min-height: 34px; font-size: 12px; padding: 0 10px">{{a.ackLabel}}</button></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="card" aria-labelledby="rc-t">
+<h2 id="rc-t" class="h2">근본 원인 그룹 <span class="tag">ALM-04</span></h2>
+<sc-if value="{{noGroup}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">연관된 알람이 묶이면 여기에 하나의 사건으로 표시됩니다.</div></sc-if>
+<sc-if value="{{hasGroup}}" hint-placeholder-val="{{false}}">
+<div style="border: 1px solid {{groupBorder}}; border-radius: 8px; padding: 12px; background: #0E1116">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px"><div style="font-weight: 700">사건 #128 · ai_infer_svc 장애</div><span class="chip" style="color: {{groupFg}}; background: {{groupBg}}">{{groupStatus}}</span></div>
+<div class="muted" style="font-size: 12px; margin: 4px 0 10px">근본 원인 후보: <b style="color: #E6EAF0">EM · ai_infer_svc 비정상 종료</b> — 시간 순서와 서비스 의존 관계로 추정</div>
+<sc-for list="{{groupChildren}}" as="c" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 8px; padding: 5px 0 5px 16px; border-left: 2px solid #2A313C; margin-left: 6px"><span class="mono" style="font-size: 11px; color: #8B95A3">{{c.rel}}</span><span style="font-size: 13px">{{c.msg}}</span></div>
+</sc-for>
+</div>
+</sc-if>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<section class="card" aria-labelledby="ru-t" style="flex: 3 1 420px">
+<h2 id="ru-t" class="h2">알람 규칙 <span class="tag">ALM-02</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 520px">
+<thead><tr><th>규칙</th><th>조건</th><th>지속</th><th>심각도</th></tr></thead>
+<tbody>
+<sc-for list="{{rules}}" as="r" hint-placeholder-count="5">
+<tr><td style="font-size: 12px">{{r.name}}</td><td class="mono" style="font-size: 12px; color: #C9D1D9">{{r.cond}}</td><td class="mono" style="font-size: 12px; color: {{r.dc}}">{{r.dur}}</td><td style="font-size: 12px; color: {{r.sc}}">{{r.sev}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+<section class="card" aria-labelledby="ch-t" style="flex: 2 1 280px">
+<h2 id="ch-t" class="h2">알림 채널 <span class="tag">ALM-03</span></h2>
+<sc-for list="{{channels}}" as="c" hint-placeholder-count="3">
+<div style="display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1E252F; font-size: 13px"><span><span style="color: #C9D1D9">{{c.name}}</span> <span class="muted" style="font-size: 12px">{{c.rule}}</span></span><span class="mono" style="color: {{c.c}}">{{c.sent}}</span></div>
+</sc-for>
+<div class="muted" style="font-size: 12px; margin-top: 8px">억제된 중복 알림 <b class="mono" style="color: #E6EAF0">{{suppressed}}</b>건</div>
+</section>
+</div>
+
+</main>
+</div>
+</div>
+</script>
+<script>
+window.__DC_PROPS = {"$preview":{"width":1440,"height":1500}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, running: true, sc: null, s0: 0, acked: {} };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { if (this.state.running) this.setState({ t: this.state.t + 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, running, sc, s0, acked } = this.state;
+    const el = sc ? t - s0 : -1;
+    const T = { ok: ['#3FB950', 'rgba(63,185,80,0.14)'], warn: ['#E3A008', 'rgba(227,160,8,0.14)'], crit: ['#F85149', 'rgba(248,81,73,0.14)'], info: ['#4C9AFF', 'rgba(76,154,255,0.14)'], off: ['#9AA4B2', 'rgba(154,164,178,0.10)'] };
+    const tn = (k) => T[k] || T.off;
+    const PH = { MVP: '#4C9AFF', '2단계': '#3FB9A8', '3단계': '#9AA4B2' };
+    const mkSteps = (L) => L.map((s, i) => { const n = L[i + 1]; const st = el < s.at ? 'p' : (n && el >= n.at ? 'd' : 'a'); const c = { d: ['#3FB950', '#C9D1D9', '완료'], a: ['#4C9AFF', '#E6EAF0', '진행 중'], p: ['#3A424E', '#8B95A3', '대기'] }[st]; return { at: '+' + s.at + 's', text: s.text, dot: c[0], fg: c[1], tag: c[2] }; });
+    const clock = (sec) => { const b = 17 * 3600 + 30 * 60 + sec; return [Math.floor(b / 3600), Math.floor(b / 60) % 60, b % 60].map(x => String(x).padStart(2, '0')).join(':'); };
+    const SC = {
+      cascade: { label: '연쇄 장애 그룹핑', steps: [
+        { at: 0, text: 'EM: ai_infer_svc 비정상 종료 알람' },
+        { at: 1, text: 'COM: InferenceResult 미제공 알람' },
+        { at: 2, text: 'PHM: perception 입력 지연 알람' },
+        { at: 3, text: '시간·의존 관계로 3건을 사건 1개로 묶음' },
+        { at: 4, text: 'Slack 알림 1건만 발송 (사건 단위)' },
+        { at: 7, text: 'ai_infer_svc 복구 → 연관 알람 자동 해제' }
+      ]},
+      flap: { label: '임계값 플래핑 억제', steps: [
+        { at: 0, text: 'CPU 사용률이 79~81% 사이에서 진동' },
+        { at: 1, text: '지속 조건 없음: 발생/해제가 매초 반복' },
+        { at: 4, text: '규칙에 지속 10초 조건 적용' },
+        { at: 5, text: '추가 알림 억제, 알람 1건으로 유지' }
+      ]}
+    };
+    const cas = sc === 'cascade';
+    const flap = sc === 'flap';
+    const resolved = cas && el >= 7;
+    const list = [];
+    if (cas && el >= 0) list.push({ id: 'c1', sev: 'CRIT', k: 'crit', msg: 'ai_infer_svc 비정상 종료 (SIGSEGV)', src: 'EM', time: clock(s0), count: 1, res: resolved });
+    if (cas && el >= 1) list.push({ id: 'c2', sev: 'WARN', k: 'warn', msg: 'InferenceResult 미제공', src: 'COM', time: clock(s0 + 1), count: Math.min(el, 6), res: resolved });
+    if (cas && el >= 2) list.push({ id: 'c3', sev: 'WARN', k: 'warn', msg: 'perception 입력 지연 > 50ms', src: 'PHM', time: clock(s0 + 2), count: Math.min(el - 1, 5), res: resolved });
+    if (flap && el >= 0) list.push({ id: 'f1', sev: 'WARN', k: 'warn', msg: 'CPU 사용률 80% 초과', src: 'RES', time: clock(s0), count: Math.min(el + 1, 4) + (el >= 4 ? 0 : 0), res: false });
+    list.push({ id: 'a1', sev: 'WARN', k: 'warn', msg: 'planning_app Deadline 초과', src: 'PHM', time: '17:27:12', count: 4, res: false });
+    list.push({ id: 'a2', sev: 'WARN', k: 'warn', msg: '/var/persist 사용량 85%', src: 'PER', time: '17:05:55', count: 1, res: false });
+    list.push({ id: 'a3', sev: 'INFO', k: 'info', msg: '장치 인증서 만료 D-38', src: 'SEC', time: '09:00:00', count: 1, res: false });
+    const alarms = list.map(a => {
+      const ak = !!acked[a.id];
+      const status = a.res ? '해제됨' : (ak ? '확인됨' : '발생');
+      return {
+        ...a, count: String(a.count), sfg: tn(a.k)[0], sbg: tn(a.k)[1], status,
+        stc: a.res ? '#3FB950' : (ak ? '#9AA4B2' : tn(a.k)[0]),
+        rowBg: a.res ? 'transparent' : (a.k === 'crit' && !ak ? 'rgba(248,81,73,0.06)' : 'transparent'),
+        ackLabel: ak || a.res ? '완료' : '확인',
+        ackDisabled: ak || a.res,
+        ack: () => this.setState({ acked: { ...this.state.acked, [a.id]: true } })
+      };
+    });
+    const open = alarms.filter(a => a.status === '발생');
+    const kpis = [
+      { label: '미확인', v: String(open.length), c: open.length ? '#F85149' : '#3FB950' },
+      { label: 'Critical', v: String(alarms.filter(a => a.sev === 'CRIT' && a.status !== '해제됨').length), c: '#F85149' },
+      { label: '오늘 발생', v: String(23 + list.length), c: '#E6EAF0' },
+      { label: '평균 확인 시간', v: '4분 12초', c: '#E6EAF0' }
+    ];
+    const grouped = cas && el >= 3;
+    const groupChildren = [
+      { rel: '원인', msg: 'EM · ai_infer_svc 비정상 종료' },
+      { rel: '└ 영향', msg: 'COM · InferenceResult 미제공' },
+      { rel: '  └ 영향', msg: 'PHM · perception 입력 지연' }
+    ];
+    const gk = resolved ? 'ok' : 'crit';
+    const rules = [
+      { name: '프로세스 비정상 종료', cond: 'em.exit_code != 0', dur: '즉시', sev: 'CRIT', k: 'crit' },
+      { name: '서비스 미제공', cond: 'com.required && !offered', dur: '3초', sev: 'WARN', k: 'warn' },
+      { name: 'Deadline 초과', cond: 'phm.deadline > budget', dur: '3회 연속', sev: 'WARN', k: 'warn' },
+      { name: 'CPU 과부하', cond: 'res.cpu_total > 80%', dur: flap && el >= 4 ? '10초 (변경됨)' : '없음', sev: 'WARN', k: 'warn', changed: flap && el >= 4 },
+      { name: '인증서 만료 임박', cond: 'sec.cert_days < 45', dur: '1일 1회', sev: 'INFO', k: 'info' }
+    ].map(r => ({ ...r, sc: tn(r.k)[0], dc: r.changed ? '#3FB950' : '#9AA4B2' }));
+    const slack = 12 + (cas && el >= 4 ? 1 : 0) + (flap ? Math.min(el, 4) : 0);
+    const suppressed = (cas && el >= 4 ? 2 : 0) + (flap && el >= 5 ? (el - 4) : 0);
+    const channels = [
+      { name: 'Slack #ap-monitor', rule: 'WARN 이상', sent: '오늘 ' + slack + '건', c: '#E6EAF0' },
+      { name: '메일 (담당자)', rule: 'CRIT만', sent: '오늘 ' + (2 + (cas ? 1 : 0)) + '건', c: '#E6EAF0' },
+      { name: '대시보드 배너', rule: '전체', sent: '활성', c: '#3FB950' }
+    ];
+    const spec = [
+      ['ALM-01', '알람 목록', '심각도, 출처, 최초 발생, 반복 횟수, 상태', 'MVP'],
+      ['ALM-02', '규칙 편집', '조건식, 지속 시간, 심각도 — 플래핑 방지', '2단계'],
+      ['ALM-03', '알림 채널', 'Slack, 메일, 배너 · 심각도별 라우팅', '2단계'],
+      ['ALM-04', '근본 원인 그룹핑', '시간·서비스 의존 관계로 연관 알람을 사건으로 묶음', '3단계'],
+      ['ALM-05', '확인(ACK)·메모', '담당자 확인, 메모, 확인 시간 통계', 'MVP'],
+      ['ALM-06', '로그·녹화 바로가기', '알람 시점의 로그와 녹화 구간으로 이동', '2단계']
+    ].map(s => ({ id: s[0], name: s[1], desc: s[2], ph: s[3], pc: PH[s[3]] }));
+    const scenarios = Object.keys(SC).map(k => ({ label: SC[k].label, run: () => this.setState({ sc: k, s0: this.state.t, running: true, acked: {} }), bg: sc === k ? '#4C9AFF' : '#0E1116', fg: sc === k ? '#0E1116' : '#E6EAF0' }));
+    return {
+      t, runLabel: running ? '일시정지' : '재생', toggle: () => this.setState({ running: !this.state.running }),
+      reset: () => this.setState({ t: 0, sc: null, s0: 0, running: true, acked: {} }),
+      scenarios, noSc: !sc, hasSc: !!sc, scTitle: sc ? SC[sc].label : '', steps: sc ? mkSteps(SC[sc].steps) : [],
+      spec, specCount: spec.length, kpis, alarms, noGroup: !grouped, hasGroup: grouped, groupChildren,
+      groupStatus: resolved ? '해제됨' : '진행 중', groupFg: tn(gk)[0], groupBg: tn(gk)[1], groupBorder: tn(gk)[0],
+      rules, channels, suppressed: String(suppressed)
+    };
+  }
+}
+window.__DC_Component = Component;
+</script>
+</body>
+</html>

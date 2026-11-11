@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>PER 영속성</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#8AB8FF;border:1px solid #2A4A75;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.kv{background:#0E1116;border:1px solid #1E252F;border-radius:8px;padding:10px 12px}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<a href="Main.dc.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; background: #1E252F; color: #C9D1D9; border-radius: 4px; padding: 2px 6px">PER</span><h1 style="margin: 0; font-size: 18px">영속성</h1></div>
+<div class="muted" style="font-size: 12px">Key-Value · File Storage 사용량 · 쓰기 빈도 · 무결성 · 플래시 수명</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span class="mono" style="font-size: 12px; color: #9AA4B2">시뮬레이션 T+{{t}}s</span>
+<button type="button" class="btn" onClick="{{toggle}}">{{runLabel}}</button>
+<sc-for list="{{scenarios}}" as="s" hint-placeholder-count="2"><button type="button" class="btn" onClick="{{s.run}}" style="background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for>
+<button type="button" class="btn" onClick="{{reset}}">초기화</button>
+</div>
+</header>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 40px">
+<aside style="flex: 1 1 300px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section class="card" aria-labelledby="sc-t">
+<h2 id="sc-t" class="h2">시나리오 진행</h2>
+<sc-if value="{{noSc}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">상단 시나리오 버튼을 누르면 단계별로 진행됩니다.</div></sc-if>
+<sc-if value="{{hasSc}}" hint-placeholder-val="{{false}}">
+<div style="font-size: 13px; font-weight: 500; margin-bottom: 6px">{{scTitle}}</div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; padding: 6px 0"><span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: {{s.dot}}; margin-top: 5px"></span><div><div style="font-size: 13px; color: {{s.fg}}">{{s.text}}</div><div class="mono" style="font-size: 11px; color: #8B95A3">{{s.at}} · {{s.tag}}</div></div></div>
+</sc-for>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="spec-t">
+<h2 id="spec-t" class="h2">기능 명세 <span class="sub">{{specCount}}개</span></h2>
+<sc-for list="{{spec}}" as="f" hint-placeholder-count="7">
+<div style="padding: 9px 0; border-bottom: 1px solid #1E252F">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; color: #8AB8FF">{{f.id}}</span><span style="font-size: 13px; font-weight: 500; flex: 1">{{f.name}}</span><span style="font-size: 10px; color: {{f.pc}}; border: 1px solid {{f.pc}}; border-radius: 10px; padding: 0 6px; white-space: nowrap">{{f.ph}}</span></div>
+<div class="muted" style="font-size: 12px; margin-top: 2px">{{f.desc}}</div>
+</div>
+</sc-for>
+</section>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<div class="card" style="padding: 14px"><div class="muted" style="font-size: 12px">{{k.label}} <span class="tag">{{k.id}}</span></div><div class="mono" style="font-size: 22px; font-weight: 500; color: {{k.c}}">{{k.v}}</div><div class="muted" style="font-size: 12px">{{k.sub}}</div></div>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<section class="card" aria-labelledby="su-t" style="flex: 1 1 340px">
+<h2 id="su-t" class="h2">스토리지 사용량 <span class="tag">PER-01</span></h2>
+<sc-for list="{{stores}}" as="s" hint-placeholder-count="5">
+<div style="margin-bottom: 12px">
+<div style="display: flex; justify-content: space-between; font-size: 12px"><span><span class="mono" style="color: #C9D1D9">{{s.name}}</span> <span class="muted">{{s.kind}}</span></span><span class="mono" style="color: {{s.color}}">{{s.text}}</span></div>
+<div style="height: 6px; border-radius: 3px; background: #1E252F; overflow: hidden; margin-top: 4px"><div style="height: 6px; width: {{s.w}}; background: {{s.color}}"></div></div>
+</div>
+</sc-for>
+</section>
+<section class="card" aria-labelledby="wr-t" style="flex: 1 1 340px">
+<h2 id="wr-t" class="h2">앱별 쓰기 빈도 <span class="sub">writes/s</span><span class="tag">PER-02</span></h2>
+<sc-for list="{{writers}}" as="w" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px">
+<span class="mono" style="width: 120px; flex: none; font-size: 12px; color: #C9D1D9">{{w.name}}</span>
+<div style="flex: 1; height: 14px; background: #1E252F; border-radius: 3px; overflow: hidden"><div style="height: 14px; width: {{w.w}}; background: {{w.color}}"></div></div>
+<span class="mono" style="width: 64px; text-align: right; font-size: 12px; color: {{w.color}}">{{w.v}}</span>
+</div>
+</sc-for>
+<div class="muted" style="font-size: 12px">임계값 50 writes/s 초과 시 경고, 100 초과 시 쓰기 제한</div>
+</section>
+</div>
+
+<section class="card" aria-labelledby="in-t">
+<h2 id="in-t" class="h2">무결성 검사 <span class="tag">PER-04</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 560px">
+<thead><tr><th>대상</th><th>방식</th><th>결과</th><th>조치</th></tr></thead>
+<tbody>
+<sc-for list="{{integ}}" as="i" hint-placeholder-count="4">
+<tr><td class="mono" style="font-size: 12px">{{i.name}}</td><td style="font-size: 12px; color: #C9D1D9">{{i.how}}</td><td><span class="chip" style="color: {{i.fg}}; background: {{i.bg}}">{{i.res}}</span></td><td style="font-size: 12px; color: #9AA4B2">{{i.act}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="card" aria-labelledby="kv-t">
+<h2 id="kv-t" class="h2">Key 탐색기 <span class="sub">planning.db · 조회 전용</span><span class="tag">PER-05</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 620px">
+<thead><tr><th>Key</th><th>타입</th><th style="text-align: right">크기</th><th>마지막 쓰기</th><th>값 미리보기</th></tr></thead>
+<tbody>
+<sc-for list="{{keys}}" as="k" hint-placeholder-count="5">
+<tr style="background: {{k.rowBg}}"><td class="mono" style="font-size: 12px">{{k.key}}</td><td class="mono" style="font-size: 12px; color: #9AA4B2">{{k.type}}</td><td class="mono" style="font-size: 12px; text-align: right">{{k.size}}</td><td class="mono" style="font-size: 12px; color: {{k.wc}}">{{k.when}}</td><td class="mono" style="font-size: 12px; color: #C9D1D9">{{k.val}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="card" aria-labelledby="mg-t">
+<h2 id="mg-t" class="h2">업데이트 마이그레이션 <span class="tag">PER-06</span></h2>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<sc-for list="{{mig}}" as="m" hint-placeholder-count="3">
+<div class="kv" style="flex: 1 1 180px"><div class="mono" style="font-size: 12px">{{m.db}}</div><div style="font-size: 13px; color: {{m.c}}">{{m.v}}</div></div>
+</sc-for>
+</div>
+</section>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, running: true, sc: null, s0: 0 };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { if (this.state.running) this.setState({ t: this.state.t + 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, running, sc, s0 } = this.state;
+    const el = sc ? t - s0 : -1;
+    const T = { ok: ['#3FB950', 'rgba(63,185,80,0.14)'], warn: ['#E3A008', 'rgba(227,160,8,0.14)'], crit: ['#F85149', 'rgba(248,81,73,0.14)'], info: ['#4C9AFF', 'rgba(76,154,255,0.14)'], off: ['#9AA4B2', 'rgba(154,164,178,0.10)'] };
+    const tn = (k) => T[k] || T.off;
+    const PH = { MVP: '#4C9AFF', '2단계': '#3FB9A8', '3단계': '#9AA4B2' };
+    const mkSteps = (L) => L.map((s, i) => { const n = L[i + 1]; const st = el < s.at ? 'p' : (n && el >= n.at ? 'd' : 'a'); const c = { d: ['#3FB950', '#C9D1D9', '완료'], a: ['#4C9AFF', '#E6EAF0', '진행 중'], p: ['#3A424E', '#8B95A3', '대기'] }[st]; return { at: '+' + s.at + 's', text: s.text, dot: c[0], fg: c[1], tag: c[2] }; });
+    const wv = (i, base, amp) => Math.max(0, base + amp * Math.sin(t * 0.9 + i * 1.7));
+    const SC = {
+      storm: { label: '쓰기 폭주 감지', steps: [
+        { at: 0, text: 'planning_app이 매 사이클 설정 키를 저장 (2 → 120 writes/s)' },
+        { at: 2, text: '임계값 50 writes/s 초과 → 경고' },
+        { at: 4, text: '/var/persist 85% → 91% 증가' },
+        { at: 6, text: '알람 발생, planning_app 쓰기 제한 적용' },
+        { at: 8, text: '원인 기록: 변경 없는 값도 저장하는 코드' }
+      ]},
+      power: { label: '전원 차단 후 복구', steps: [
+        { at: 0, text: 'planning.db 쓰기 중 전원 차단' },
+        { at: 2, text: '재부팅 후 무결성 검사 시작' },
+        { at: 3, text: 'planning.db CRC 오류 1건 발견' },
+        { at: 4, text: '백업 사본에서 복구' },
+        { at: 5, text: '복구 완료: 마지막 1회 쓰기만 롤백' }
+      ]}
+    };
+    const storm = sc === 'storm' && el >= 0;
+    const pw = sc === 'power' && el >= 0;
+    const planW = storm ? (el < 6 ? wv(1, 120, 6) : wv(1, 8, 1)) : wv(1, 2, 0.4);
+    const used = storm ? Math.min(91, 85 + el) : 85;
+
+    const stores = [
+      { name: 'planning.db', kind: 'KVS', v: storm ? Math.min(46, 30 + el * 3) : 30, lim: 64, unit: 'MB' },
+      { name: 'perception.db', kind: 'KVS', v: 12, lim: 32, unit: 'MB' },
+      { name: 'maps/', kind: 'File', v: 1840, lim: 2048, unit: 'MB' },
+      { name: 'calib/', kind: 'File', v: 6, lim: 16, unit: 'MB' },
+      { name: '/var/persist 전체', kind: '파티션', v: used, lim: 100, unit: '%' }
+    ].map(s => { const p = s.v / s.lim * 100; return { name: s.name, kind: s.kind, text: s.unit === '%' ? Math.round(s.v) + '%' : Math.round(s.v) + ' / ' + s.lim + ' ' + s.unit, w: p + '%', color: p >= 90 ? '#F85149' : (p >= 80 ? '#E3A008' : '#4C9AFF') }; });
+
+    const writers = [
+      ['planning_app', planW], ['diag_mgr', wv(2, 1.2, 0.3)], ['perception_app', wv(3, 0.4, 0.1)], ['em_daemon', 0.1]
+    ].map(w => ({ name: w[0], v: w[1].toFixed(1), w: Math.min(100, w[1] / 130 * 100) + '%', color: w[1] >= 100 ? '#F85149' : (w[1] >= 50 ? '#E3A008' : '#4C9AFF') }));
+
+    let dbRes = ['정상', 'ok', '—'];
+    if (pw) {
+      if (el < 2) dbRes = ['재부팅 대기', 'off', '—'];
+      else if (el < 3) dbRes = ['검사 중', 'info', '—'];
+      else if (el < 4) dbRes = ['CRC 오류', 'crit', '백업 사본 확인'];
+      else if (el < 5) dbRes = ['복구 중', 'warn', 'planning.db.bak → 복원'];
+      else dbRes = ['복구됨', 'ok', '1회 쓰기 롤백, 손실 키 0'];
+    }
+    const other = pw && el < 2 ? ['재부팅 대기', 'off'] : (pw && el < 3 ? ['검사 중', 'info'] : ['정상', 'ok']);
+    const integ = [
+      { name: 'planning.db', how: 'CRC32 + 이중 저장', res: dbRes[0], k: dbRes[1], act: dbRes[2] },
+      { name: 'perception.db', how: 'CRC32 + 이중 저장', res: other[0], k: other[1], act: '—' },
+      { name: 'maps/', how: 'SHA-256 매니페스트', res: other[0], k: other[1], act: '—' },
+      { name: 'calib/', how: 'SHA-256 + 서명', res: other[0], k: other[1], act: '—' }
+    ].map(i => ({ ...i, fg: tn(i.k)[0], bg: tn(i.k)[1] }));
+
+    const keys = [
+      { key: 'planner.cfg.lane_bias', type: 'float', size: '8 B', when: storm && el < 6 ? '방금 (120/s)' : '3분 전', val: (0.12 + (storm ? 0.0001 * (t % 7) : 0)).toFixed(4), hot: storm && el < 6 },
+      { key: 'planner.cfg.max_speed', type: 'float', size: '8 B', when: '2일 전', val: '27.7778' },
+      { key: 'planner.state.last_route', type: 'blob', size: '4.2 KB', when: '12분 전', val: '[route#8812 · 43 pts]' },
+      { key: 'odo.total_km', type: 'uint64', size: '8 B', when: '1분 전', val: '18342' },
+      { key: 'feature.lka.enabled', type: 'bool', size: '1 B', when: '5일 전', val: 'true' }
+    ].map(k => ({ ...k, rowBg: k.hot ? 'rgba(227,160,8,0.08)' : 'transparent', wc: k.hot ? '#E3A008' : '#9AA4B2' }));
+
+    const tbw = 18.4 + (storm ? el * 0.01 : 0);
+    const kpis = [
+      { id: 'PER-01', label: '/var/persist', v: used + '%', sub: '64GB eMMC 중', c: used >= 90 ? '#F85149' : '#E3A008' },
+      { id: 'PER-02', label: '총 쓰기', v: (planW + 1.7).toFixed(1) + '/s', sub: (storm ? wv(4, 480, 20) : wv(4, 12, 2)).toFixed(0) + ' KB/s', c: planW >= 50 ? '#E3A008' : '#E6EAF0' },
+      { id: 'PER-03', label: '플래시 수명 (TBW)', v: tbw.toFixed(1) + '%', sub: storm ? '이 속도면 잔여 1.3년' : '예상 잔여 9.8년', c: storm ? '#F85149' : '#E6EAF0' },
+      { id: 'PER-07', label: 'flush 지연 p99', v: (storm ? wv(5, 42, 4) : wv(5, 6, 1)).toFixed(1) + 'ms', sub: '예산 20ms', c: storm ? '#E3A008' : '#E6EAF0' }
+    ];
+    const mig = [
+      { db: 'planning.db', v: '스키마 v4 · 최신', c: '#3FB950' },
+      { db: 'perception.db', v: 'v3 → v4 대기 (다음 OTA)', c: '#E3A008' },
+      { db: 'calib/', v: 'v2 · 변경 없음', c: '#9AA4B2' }
+    ];
+
+    const spec = [
+      ['PER-01', '스토리지 사용량', 'KVS·File Storage별 용량, 한도 대비 사용률', 'MVP'],
+      ['PER-02', '앱별 쓰기 빈도', 'writes/s, KB/s, 폭주 감지와 쓰기 제한', '2단계'],
+      ['PER-03', '플래시 수명 예측', 'TBW 사용률, 현재 속도 기준 잔여 수명', '3단계'],
+      ['PER-04', '무결성 검사', 'CRC·해시 검사 결과, 백업 복구 이력', '2단계'],
+      ['PER-05', 'Key 탐색기', 'Key 목록, 타입, 크기, 마지막 쓰기 (조회 전용)', '2단계'],
+      ['PER-06', '마이그레이션 상태', 'OTA 후 스키마 버전 변환 진행 상황', '3단계'],
+      ['PER-07', 'flush 지연', '동기화 소요 시간 p99, 예산 초과 경고', '2단계']
+    ].map(s => ({ id: s[0], name: s[1], desc: s[2], ph: s[3], pc: PH[s[3]] }));
+    const scenarios = Object.keys(SC).map(k => ({ label: SC[k].label, run: () => this.setState({ sc: k, s0: this.state.t, running: true }), bg: sc === k ? '#4C9AFF' : '#0E1116', fg: sc === k ? '#0E1116' : '#E6EAF0' }));
+    return {
+      t, runLabel: running ? '일시정지' : '재생', toggle: () => this.setState({ running: !this.state.running }),
+      reset: () => this.setState({ t: 0, sc: null, s0: 0, running: true }),
+      scenarios, noSc: !sc, hasSc: !!sc, scTitle: sc ? SC[sc].label : '', steps: sc ? mkSteps(SC[sc].steps) : [],
+      spec, specCount: spec.length, kpis, stores, writers, integ, keys, mig
+    };
+  }
+}
+</script>
+</body>
+</html>

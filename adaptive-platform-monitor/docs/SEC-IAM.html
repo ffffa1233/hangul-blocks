@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security 접근 거부 탐색</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#8AB8FF;border:1px solid #2A4A75;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.sel{background:#0E1116;color:#E6EAF0;border:1px solid #2A313C;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;min-height:40px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C;white-space:nowrap}
+.tbl td{padding:8px;border-bottom:1px solid #1E252F;vertical-align:top}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #1E252F;font-size:13px}
+.rowbtn{background:none;border:0;padding:0;color:#8AB8FF;font:inherit;font-size:12px;cursor:pointer;text-align:left;min-height:32px}
+</style>
+<script src="./runtime.js"></script>
+</head>
+<body>
+<script type="text/x-dc-template" id="dc-template">
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22">
+<a href="Main.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div class="muted" style="font-size: 12px">Security / SEC-01</div>
+<h1 style="margin: 0; font-size: 18px">접근 거부 탐색</h1>
+</div>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9AA4B2">ECU<select class="sel"><option>ADCU-01 · Linux · Qualcomm</option><option>ADCU-02 · QNX · NXP</option></select></label>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #C9D1D9"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{liveDot}}"></span>{{liveText}}</span>
+<button type="button" class="btn" onClick="{{toggleLive}}">{{liveBtn}}</button>
+</header>
+<nav aria-label="Security 메뉴" style="display: flex; gap: 2px; padding: 0 24px; background: #161B22; border-bottom: 1px solid #2A313C; overflow-x: auto">
+<sc-for list="{{tabs}}" as="b" hint-placeholder-count="8"><a href="{{b.href}}" style="padding: 12px 14px; white-space: nowrap; text-decoration: none; font-size: 13px; color: {{b.fg}}; border-bottom: 2px solid {{b.line}}">{{b.label}}</a></sc-for>
+</nav>
+
+<div style="padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<div class="card" style="padding: 14px"><div class="muted" style="font-size: 12px">{{k.label}}</div><div class="mono" style="font-size: 24px; font-weight: 500; color: {{k.c}}">{{k.v}}</div><div class="muted" style="font-size: 12px">{{k.sub}}</div></div>
+</sc-for>
+</div>
+
+<section class="card" aria-labelledby="hist-t">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 8px">
+<h2 id="hist-t" class="h2" style="margin: 0">시간대별 거부 건수 <span class="sub">최근 24시간</span></h2>
+<div style="display: flex; gap: 14px; font-size: 12px; color: #9AA4B2"><span><span style="display: inline-block; width: 10px; height: 10px; background: #4C9AFF; vertical-align: middle"></span> IAM</span><span><span style="display: inline-block; width: 10px; height: 10px; background: #3FB9A8; vertical-align: middle"></span> SELinux</span><span><span style="display: inline-block; width: 10px; height: 10px; background: #E3A008; vertical-align: middle"></span> seccomp</span></div>
+</div>
+<div style="display: flex; align-items: flex-end; gap: 4px; height: 110px; border-bottom: 1px solid #2A313C">
+<sc-for list="{{hist}}" as="h" hint-placeholder-count="24">
+<div style="flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end">
+<div style="height: {{h.sc}}; background: #E3A008"></div>
+<div style="height: {{h.se}}; background: #3FB9A8"></div>
+<div style="height: {{h.ia}}; background: #4C9AFF; border-radius: 2px 2px 0 0"></div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 11px; color: #8B95A3; margin-top: 4px" class="mono"><span>18:00 (어제)</span><span>00:00</span><span>06:00</span><span>12:00</span><span>지금</span></div>
+</section>
+
+<section class="card" aria-label="필터" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end">
+<div style="display: flex; flex-direction: column; gap: 4px"><span class="muted" style="font-size: 12px">출처</span><div style="display: flex; gap: 4px; flex-wrap: wrap"><sc-for list="{{srcBtns}}" as="s" hint-placeholder-count="4"><button type="button" class="btn" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="min-height: 36px; font-size: 12px; padding: 0 12px; background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for></div></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><span class="muted" style="font-size: 12px">판정</span><div style="display: flex; gap: 4px; flex-wrap: wrap"><sc-for list="{{verBtns}}" as="s" hint-placeholder-count="4"><button type="button" class="btn" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="min-height: 36px; font-size: 12px; padding: 0 12px; background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for></div></div>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9AA4B2">주체 (앱·프로세스)<select class="sel"><option>전체</option><option>hmi_bridge</option><option>planning_app</option><option>cloud_gw</option><option>ai_infer_svc</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9AA4B2">기간<select class="sel"><option>최근 24시간</option><option>최근 1시간</option><option>최근 7일</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9AA4B2; flex: 1 1 200px">검색<input type="text" class="sel" placeholder="서비스 ID, 경로, 정책 ID"></label>
+<button type="button" class="btn">CSV 내보내기</button>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" aria-labelledby="ev-t" style="flex: 3 1 560px">
+<h2 id="ev-t" class="h2">거부 이벤트 <span class="sub">{{evCount}}건 · 같은 주체·대상·동작은 1초 단위로 묶음</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 760px">
+<thead><tr><th>시각</th><th>출처</th><th>주체</th><th>대상</th><th>동작</th><th style="text-align: right">횟수</th><th>판정</th><th></th></tr></thead>
+<tbody>
+<sc-for list="{{events}}" as="e" hint-placeholder-count="8">
+<tr style="background: {{e.rowBg}}">
+<td class="mono" style="font-size: 12px; color: #9AA4B2; white-space: nowrap">{{e.time}}</td>
+<td><span class="chip" style="color: {{e.srcFg}}; background: {{e.srcBg}}">{{e.src}}</span></td>
+<td class="mono" style="font-size: 12px">{{e.subj}}</td>
+<td class="mono" style="font-size: 12px; color: #C9D1D9">{{e.obj}}</td>
+<td style="font-size: 12px">{{e.act}}</td>
+<td class="mono" style="font-size: 12px; text-align: right; color: {{e.cntC}}">{{e.count}}</td>
+<td><span class="chip" style="color: {{e.vFg}}; background: {{e.vBg}}">{{e.verdict}}</span></td>
+<td><button type="button" class="rowbtn" onClick="{{e.pick}}">{{e.pickLabel}}</button></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<sc-if value="{{noEvents}}" hint-placeholder-val="{{false}}"><div class="muted" style="padding: 16px 0; font-size: 13px">조건에 맞는 이벤트가 없습니다.</div></sc-if>
+</section>
+
+<aside class="card" aria-labelledby="dt-t" style="flex: 2 1 360px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px"><h2 id="dt-t" class="h2" style="margin: 0">이벤트 상세</h2><span class="chip" style="color: {{d.vFg}}; background: {{d.vBg}}">{{d.verdict}}</span></div>
+<div class="kv"><span class="muted">시각</span><span class="mono">{{d.full}}</span></div>
+<div class="kv"><span class="muted">출처</span><span>{{d.srcLong}}</span></div>
+<div class="kv"><span class="muted">주체</span><span class="mono">{{d.subjLong}}</span></div>
+<div class="kv"><span class="muted">대상</span><span class="mono" style="text-align: right">{{d.obj}}</span></div>
+<div class="kv"><span class="muted">동작</span><span>{{d.act}}</span></div>
+<div class="kv"><span class="muted">적용 정책</span><span class="mono">{{d.policy}}</span></div>
+<div class="kv"><span class="muted">누적 횟수</span><span class="mono">{{d.count}}</span></div>
+<div style="margin-top: 12px"><div class="muted" style="font-size: 12px; margin-bottom: 4px">정책 근거</div>
+<div class="mono" style="background: #0B0E12; border: 1px solid #1E252F; border-radius: 6px; padding: 10px; font-size: 12px; white-space: pre-wrap; color: #C9D1D9">{{d.why}}</div></div>
+<div style="margin-top: 12px"><div class="muted" style="font-size: 12px; margin-bottom: 4px">같은 주체의 최근 시도</div>
+<div style="display: flex; align-items: flex-end; gap: 3px; height: 40px"><sc-for list="{{d.spark}}" as="s" hint-placeholder-count="12"><div style="flex: 1; height: {{s.h}}; background: {{s.c}}; border-radius: 2px 2px 0 0"></div></sc-for></div>
+<div class="muted mono" style="font-size: 11px; display: flex; justify-content: space-between"><span>-60분</span><span>지금</span></div></div>
+<div style="margin-top: 12px"><div class="muted" style="font-size: 12px; margin-bottom: 4px">관련 로그 (±5초)</div>
+<div class="mono" style="background: #0B0E12; border: 1px solid #1E252F; border-radius: 6px; font-size: 11px">
+<sc-for list="{{d.logs}}" as="l" hint-placeholder-count="3"><div style="padding: 5px 10px; border-bottom: 1px solid #161B22; color: #C9D1D9">{{l}}</div></sc-for>
+</div></div>
+<div style="margin-top: 12px"><div class="muted" style="font-size: 12px; margin-bottom: 4px">권장 조치</div><div style="font-size: 13px">{{d.advice}}</div></div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px">
+<button type="button" class="btn" onClick="{{markPolicy}}">정책 오류로 표시</button>
+<button type="button" class="btn" onClick="{{markAttack}}" style="border-color: #6B2A27; color: #F85149">IDS 사건으로 승격</button>
+<button type="button" class="btn" onClick="{{markNormal}}">정상 차단으로 표시</button>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 13px"><a href="LOG.html">전체 로그 보기</a><a href="SEC-PERM.html">권한 매트릭스에서 보기</a><a href="SEC-IDS.html">IDS 사건 목록</a></div>
+<div class="muted" style="font-size: 11px; margin-top: 10px">판정 변경은 감사 로그에 기록됩니다.</div>
+</aside>
+</div>
+
+</div>
+</div>
+</script>
+<script>
+window.__DC_PROPS = {"$preview":{"width":1440,"height":1500}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, live: true, src: 'ALL', ver: 'ALL', sel: 'e1', cls: {} };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { if (this.state.live) this.setState({ t: this.state.t + 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, live, src, ver, sel, cls } = this.state;
+    const ME = 'SEC-IAM';
+    const TABS = [['SEC', '개요'], ['SEC-IAM', '접근 거부'], ['SEC-PERM', '권한 매트릭스'], ['SEC-SECOC', 'SecOC'], ['SEC-BOOT', 'Secure Boot'], ['SEC-CERT', '인증서·키'], ['SEC-IDS', 'IDS 사건'], ['SEC-AUDIT', '감사 로그']];
+    const tabs = TABS.map(([f, l]) => ({ href: f === ME ? '#' : f + '.html', label: l, fg: f === ME ? '#E6EAF0' : '#9AA4B2', line: f === ME ? '#4C9AFF' : 'transparent' }));
+    const clock = (sec) => { const b = 17 * 3600 + 29 * 60 + 30 + sec; return [Math.floor(b / 3600) % 24, Math.floor(b / 60) % 60, b % 60].map(x => String(x).padStart(2, '0')).join(':'); };
+    const SRC = { IAM: ['#4C9AFF', 'rgba(76,154,255,0.14)', '자체 IAM (정책 판단 지점)'], SELinux: ['#3FB9A8', 'rgba(63,185,168,0.14)', 'SELinux AVC (auditd)'], seccomp: ['#E3A008', 'rgba(227,160,8,0.14)', 'seccomp (auditd SECCOMP)'] };
+    const VER = { '공격 의심': ['#F85149', 'rgba(248,81,73,0.14)'], '정책 오류 의심': ['#E3A008', 'rgba(227,160,8,0.14)'], '정상 차단': ['#9AA4B2', 'rgba(154,164,178,0.12)'], 'IDS 사건': ['#F85149', 'rgba(248,81,73,0.22)'] };
+    const repeat = 5 + Math.floor(t / 4);
+    const base = [
+      { id: 'e1', time: clock(Math.floor(t / 4) * 4 - 18), src: 'IAM', subj: 'hmi_bridge', pid: '1544', obj: 'Trajectory 0x1101:1', act: 'Subscribe', policy: 'pol-com-017', count: repeat, verdict: '공격 의심',
+        why: 'grant: Trajectory 0x1101:1\n  subscribe: [control_app]\n  # hmi_bridge 없음 → 기본 거부', logs: ['17:29:12.104 COM  WARN  subscribe rejected by IAM (hmi_bridge)', '17:29:12.104 IAM  INFO  deny pol-com-017 subject=hmi_bridge', '17:29:12.611 HMI  ERROR retry subscribe Trajectory (5)'],
+        advice: '정상 앱이 필요로 하는 권한이 아니라면 IDS 사건으로 승격하세요. 1시간 동안 반복되고 있습니다.', spark: [0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 3, 5] },
+      { id: 'e2', time: '17:21:40', src: 'SELinux', subj: 'hmi_bridge', pid: '1544', obj: '/dev/can0', act: '열기 (open)', policy: 'hmi_t → can_device_t', count: 1, verdict: '정상 차단',
+        why: 'avc: denied { open } for pid=1544\n  comm="hmi_bridge" path="/dev/can0"\n  scontext=hmi_t tcontext=can_device_t', logs: ['17:21:40.882 kernel audit: avc denied { open } hmi_t', '17:21:40.883 HMI  WARN  CAN raw open failed (EACCES)'],
+        advice: 'HMI는 CAN에 직접 접근하지 않는 설계이므로 정상 차단입니다. 같은 시도가 반복되면 다시 확인하세요.', spark: [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0] },
+      { id: 'e3', time: '17:05:02', src: 'IAM', subj: 'planning_app', pid: '1104', obj: 'MapService 0x5001:1', act: 'Method 호출 (getTile)', policy: 'pol-com-031', count: 214, verdict: '정책 오류 의심',
+        why: 'grant: MapService 0x5001:1\n  call.getTile: [hmi_bridge]\n  # planning_app 누락 — 11-08 배포 이후 발생', logs: ['17:05:02.310 PLAN WARN  map tile request denied', '17:05:02.311 IAM  INFO  deny pol-com-031 subject=planning_app'],
+        advice: '11-08 배포 직후부터 정상 앱이 계속 막히고 있습니다. Manifest에 권한이 빠졌을 가능성이 큽니다.', spark: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4] },
+      { id: 'e4', time: '16:58:33', src: 'seccomp', subj: 'ai_infer_svc', pid: '2210', obj: 'syscall ptrace(101)', act: '시스템 콜', policy: 'seccomp ai_infer.json', count: 1, verdict: '정상 차단',
+        why: 'type=SECCOMP syscall=101 (ptrace)\n  action=KILL_PROCESS comm="ai_infer_svc"', logs: ['16:58:33.004 kernel audit: SECCOMP syscall=101 ai_infer_svc', '16:58:33.010 EM   ERROR ai_infer_svc killed (SIGSYS)'],
+        advice: '디버그 라이브러리가 양산 빌드에 섞였는지 확인하세요. EM 페이지의 종료 기록과 연결됩니다.', spark: [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0] },
+      { id: 'e5', time: '16:12:08', src: 'IAM', subj: 'diag_tool', pid: '3302', obj: 'PER planning.db', act: '쓰기', policy: 'pol-per-004', count: 2, verdict: '정상 차단',
+        why: 'grant: planning.db\n  write: [planning_app]\n  read: [planning_app, diag_tool]', logs: ['16:12:08.551 DIAG WARN  write planning.db denied'],
+        advice: '진단 도구는 읽기만 허용된 설계입니다.', spark: [0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0] },
+      { id: 'e6', time: '09:41:55', src: 'IAM', subj: 'cloud_gw', pid: '1690', obj: 'VehicleState 0x2001:1', act: 'Subscribe', policy: 'pol-com-009', count: 12, verdict: '정책 오류 의심',
+        why: 'grant: VehicleState 0x2001:1\n  subscribe: [planning_app, hmi_bridge]', logs: ['09:41:55.120 CGW  WARN  subscribe VehicleState denied'],
+        advice: '원격 진단 기능 추가 요청과 관련이 있는지 담당자에게 확인하세요.', spark: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+    ];
+    const pool = [
+      { src: 'SELinux', subj: 'dlt_viewer', obj: '/proc/1104/mem', act: '읽기', policy: 'dlt_t → app_t', verdict: '정상 차단' },
+      { src: 'seccomp', subj: 'hmi_bridge', obj: 'syscall socket(AF_PACKET)', act: '시스템 콜', policy: 'seccomp hmi.json', verdict: '공격 의심' }
+    ];
+    const gen = [];
+    for (let k = 8; k <= t; k += 8) {
+      const p = pool.at((k / 8) % 2);
+      gen.push({ id: 'g' + k, time: clock(k), src: p.src, subj: p.subj, pid: '—', obj: p.obj, act: p.act, policy: p.policy, count: 1, verdict: p.verdict,
+        why: '실시간 수신 이벤트 (시뮬레이션)', logs: [clock(k) + ' kernel audit: denied ' + p.subj], advice: '같은 패턴이 반복되는지 지켜보세요.', spark: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1] });
+    }
+    const all = gen.reverse().concat(base).map(e => ({ ...e, verdict: cls[e.id] || e.verdict }));
+    const filtered = all.filter(e => (src === 'ALL' || e.src === src) && (ver === 'ALL' || e.verdict === ver || (ver === '공격 의심' && e.verdict === 'IDS 사건')));
+    const events = filtered.map(e => ({
+      ...e, count: String(e.count), cntC: e.count >= 5 ? '#F85149' : '#E6EAF0', srcFg: SRC[e.src][0], srcBg: SRC[e.src][1], vFg: VER[e.verdict][0], vBg: VER[e.verdict][1],
+      rowBg: e.id === sel ? 'rgba(76,154,255,0.10)' : 'transparent', pickLabel: e.id === sel ? '선택됨' : '상세', pick: () => this.setState({ sel: e.id })
+    }));
+    const cur = all.find(e => e.id === sel) || all[0];
+    const mx = Math.max(1, ...cur.spark);
+    const d = {
+      ...cur, full: '2026-11-10 ' + cur.time, srcLong: SRC[cur.src][2], subjLong: cur.subj + ' (pid ' + cur.pid + ')', count: String(cur.count) + '회',
+      vFg: VER[cur.verdict][0], vBg: VER[cur.verdict][1],
+      spark: cur.spark.map(v => ({ h: (v / mx * 100) + '%', c: v ? '#F85149' : '#2A313C' }))
+    };
+    const setCls = (v) => () => this.setState({ cls: { ...this.state.cls, [this.state.sel]: v } });
+
+    const hist = [];
+    for (let i = 0; i < 24; i++) {
+      const ia = 3 + 2 * Math.sin(i * 0.9) + (i >= 22 ? 9 + Math.floor(t / 4) : 0) + (i === 10 ? 4 : 0);
+      const se = 1 + (i % 5 === 0 ? 2 : 0);
+      const sc = i === 22 ? 1 : 0;
+      hist.push({ ia: (ia / 30 * 100) + '%', se: (se / 30 * 100) + '%', sc: (sc / 30 * 100) + '%' });
+    }
+    const totalDeny = 248 + Math.floor(t / 4) + gen.length;
+    const kpis = [
+      { label: '24시간 거부', v: String(totalDeny), sub: '어제 같은 시간 대비 +38%', c: '#E6EAF0' },
+      { label: '고유 주체', v: '7', sub: '앱·프로세스 기준', c: '#E6EAF0' },
+      { label: '반복 시도 (5회+)', v: '2', sub: 'hmi_bridge, planning_app', c: '#F85149' },
+      { label: '정책 오류 의심', v: String(all.filter(e => e.verdict === '정책 오류 의심').length), sub: '정상 앱이 막힌 경우', c: '#E3A008' }
+    ];
+    const mk = (cur, key, set, labels) => labels.map(([k, l]) => ({ label: l, pressed: k === cur ? 'true' : 'false', pick: () => this.setState({ [key]: k }), bg: k === cur ? '#4C9AFF' : '#0E1116', fg: k === cur ? '#0E1116' : '#C9D1D9' }));
+    return {
+      tabs, liveDot: live ? '#3FB950' : '#9AA4B2', liveText: live ? '실시간 수신 중' : '일시정지', liveBtn: live ? '일시정지' : '재개',
+      toggleLive: () => this.setState({ live: !this.state.live }),
+      kpis, hist, events, evCount: String(events.length), noEvents: events.length === 0, d,
+      srcBtns: mk(src, 'src', null, [['ALL', '전체'], ['IAM', 'IAM'], ['SELinux', 'SELinux'], ['seccomp', 'seccomp']]),
+      verBtns: mk(ver, 'ver', null, [['ALL', '전체'], ['공격 의심', '공격 의심'], ['정책 오류 의심', '정책 오류'], ['정상 차단', '정상 차단']]),
+      markPolicy: setCls('정책 오류 의심'), markAttack: setCls('IDS 사건'), markNormal: setCls('정상 차단')
+    };
+  }
+}
+window.__DC_Component = Component;
+</script>
+</body>
+</html>
