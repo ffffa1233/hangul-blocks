@@ -13,12 +13,13 @@
   `https://ffffa1233.github.io/hangul-blocks/adaptive-platform-monitor/docs/`
 - 로컬: `adaptive-platform-monitor/docs/index.html` 을 브라우저로 열면 됩니다. 서버나 설치가 필요 없습니다.
 
-## 화면 구성 (21개)
+## 화면 구성 (22개)
 
 | 영역 | 파일 | 시뮬레이션 시나리오 |
 | --- | --- | --- |
 | 대시보드 | `Main.html` | 실시간 개요, 메뉴 배지 |
 | **라이프사이클 타임라인** | `TL.html` | 기동 → 주행 → 종료 / 주행 중 앱 크래시와 자동 복구 (재생·시점 이동) |
+| **센서 상태** | `SNS.html` | 전방 카메라 오염 → 속도 제한 / LiDAR 링크 단절 → 융합 모드 변경 / 터널 진입 → GNSS 상실·추측항법 |
 | EM 실행 관리 | `EM.html` | 앱 크래시 → 자동 재시작 / 재시작 한도 초과 → FG 정지 |
 | SM 상태 관리 | `SM.html` | 주행 모드 진입 / 기동 타임아웃 → 롤백 |
 | COM 통신 | `COM.html` | Provider 중단 → 재연결 / 네트워크 혼잡 |
@@ -46,6 +47,12 @@
 프로세스 기동·종료(EM), Machine State·Function Group 전이(SM), 서비스 Offer·Subscribe(COM)를 한 시간축에 겹쳐 보여줍니다. 재생하거나 눈금을 눌러 그 순간 모든 레인의 상태와 이벤트 순서를 확인할 수 있습니다.
 
 ![라이프사이클 타임라인](spec-images/timeline.png)
+
+## 센서 상태 모니터링
+
+카메라·레이더·LiDAR·초음파·GNSS/IMU·휠속 15개 센서의 수신 주기, 지연, 드롭, gPTP 시간 동기, 데이터 품질(가림·포인트 수·Fix), 캘리브레이션, DTC를 보여줍니다. 차량 배치도에서 장애 센서의 감지 범위가 빨갛게 바뀌고, 인지 기능별 센서 중복도와 주행 조건(ODD) 제한까지 한 화면에서 확인합니다.
+
+![센서 상태](spec-images/sensors.png)
 
 ## 개발 명세
 

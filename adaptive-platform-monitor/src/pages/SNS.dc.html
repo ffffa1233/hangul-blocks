@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>센서 상태 모니터링</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#8AB8FF;border:1px solid #2A4A75;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:8px;border-bottom:1px solid #2A313C;white-space:nowrap}
+.tbl td{padding:7px 8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #1E252F;font-size:13px}
+.pin{position:absolute;transform:translate(-50%,-50%);min-width:44px;height:22px;padding:0 6px;border-radius:11px;font:inherit;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.rowbtn{background:none;border:0;padding:0;color:#8AB8FF;font:inherit;font-size:12px;cursor:pointer;min-height:30px}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<a href="Main.dc.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 260px">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; background: #1E252F; color: #C9D1D9; border-radius: 4px; padding: 2px 6px">SNS</span><h1 style="margin: 0; font-size: 18px">센서 상태</h1></div>
+<div class="muted" style="font-size: 12px">카메라 · 레이더 · LiDAR · 초음파 · GNSS/IMU · 휠속 — 수신 · 시간 동기 · 품질 · 기능 영향</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span class="mono" style="font-size: 12px; color: #9AA4B2">시뮬레이션 T+{{t}}s</span>
+<button type="button" class="btn" onClick="{{toggle}}">{{runLabel}}</button>
+<sc-for list="{{scenarios}}" as="s" hint-placeholder-count="3"><button type="button" class="btn" onClick="{{s.run}}" style="background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for>
+<button type="button" class="btn" onClick="{{reset}}">초기화</button>
+</div>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 40px">
+<aside style="flex: 1 1 290px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section class="card" aria-labelledby="sc-t">
+<h2 id="sc-t" class="h2">시나리오 진행</h2>
+<sc-if value="{{noSc}}" hint-placeholder-val="{{true}}"><div class="muted" style="font-size: 13px">상단 시나리오 버튼을 누르면 단계별로 진행됩니다. 지도나 표에서 센서를 누르면 오른쪽에 상세가 열립니다.</div></sc-if>
+<sc-if value="{{hasSc}}" hint-placeholder-val="{{false}}">
+<div style="font-size: 13px; font-weight: 500; margin-bottom: 6px">{{scTitle}}</div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; padding: 6px 0"><span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: {{s.dot}}; margin-top: 5px"></span><div><div style="font-size: 13px; color: {{s.fg}}">{{s.text}}</div><div class="mono" style="font-size: 11px; color: #8B95A3">{{s.at}} · {{s.tag}}</div></div></div>
+</sc-for>
+</sc-if>
+</section>
+<section class="card" aria-labelledby="spec-t">
+<h2 id="spec-t" class="h2">기능 명세 <span class="sub">{{specCount}}개</span></h2>
+<sc-for list="{{spec}}" as="f" hint-placeholder-count="9">
+<div style="padding: 8px 0; border-bottom: 1px solid #1E252F">
+<div style="display: flex; align-items: center; gap: 8px"><span class="mono" style="font-size: 11px; color: #8AB8FF">{{f.id}}</span><span style="font-size: 13px; font-weight: 500; flex: 1">{{f.name}}</span><span style="font-size: 10px; color: {{f.pc}}; border: 1px solid {{f.pc}}; border-radius: 10px; padding: 0 6px; white-space: nowrap">{{f.ph}}</span></div>
+<div class="muted" style="font-size: 12px; margin-top: 2px">{{f.desc}}</div>
+</div>
+</sc-for>
+</section>
+</aside>
+
+<main style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<sc-if value="{{oddOn}}" hint-placeholder-val="{{false}}">
+<div style="padding: 12px 16px; border-radius: 10px; border: 1px solid {{odd.bd}}; background: {{odd.bg}}; font-size: 13px"><b style="color: {{odd.fg}}">{{odd.title}}</b> — {{odd.text}}</div>
+</sc-if>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="5">
+<div class="card" style="padding: 14px"><div class="muted" style="font-size: 12px">{{k.label}}</div><div class="mono" style="font-size: 22px; font-weight: 500; color: {{k.c}}">{{k.v}}</div><div class="muted" style="font-size: 12px">{{k.sub}}</div></div>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+<section class="card" aria-labelledby="map-t" style="flex: 1 1 470px">
+<h2 id="map-t" class="h2">센서 배치 · 감지 범위 <span class="sub">위에서 본 차량, 위쪽이 전방</span><span class="tag">SNS-03</span></h2>
+<div style="overflow-x: auto">
+<div style="position: relative; width: 440px; height: 480px; margin: 0 auto; border-radius: 8px; background: #0B0E12; overflow: hidden">
+<sc-for list="{{wedges}}" as="w" hint-placeholder-count="12">
+<div style="position: absolute; left: {{w.x}}; top: {{w.y}}; width: {{w.d}}; height: {{w.d}}; transform: translate(-50%, -50%); border-radius: 50%; background: {{w.bg}}; border: {{w.bd}}; box-sizing: border-box; pointer-events: none"></div>
+</sc-for>
+<div style="position: absolute; left: 170px; top: 150px; width: 100px; height: 240px; border-radius: 26px 26px 18px 18px; border: 2px solid #3A424E; background: #161B22; box-sizing: border-box"></div>
+<div style="position: absolute; left: 182px; top: 198px; width: 76px; height: 40px; border-radius: 10px 10px 4px 4px; border: 1px solid #2A313C"></div>
+<div style="position: absolute; left: 186px; top: 332px; width: 68px; height: 26px; border-radius: 4px 4px 8px 8px; border: 1px solid #2A313C"></div>
+<sc-for list="{{pins}}" as="p" hint-placeholder-count="15">
+<button type="button" class="pin" onClick="{{p.pick}}" aria-label="{{p.aria}}" style="left: {{p.x}}; top: {{p.y}}; background: {{p.bg}}; color: {{p.fg}}; border: {{p.bd}}">{{p.code}}</button>
+</sc-for>
+<span class="muted" style="position: absolute; left: 12px; top: 10px; font-size: 11px">▲ 전방</span>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 12px; color: #9AA4B2; justify-content: center">
+<span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #3FB950; vertical-align: middle"></span> 정상</span>
+<span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #E3A008; vertical-align: middle"></span> 품질 저하</span>
+<span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #F85149; vertical-align: middle"></span> 장애 · 데이터 없음</span>
+<span>음영 = 감지 범위 (축척 아님)</span>
+</div>
+</section>
+
+<section class="card" aria-labelledby="dt-t" style="flex: 1 1 340px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px">
+<div><div class="mono muted" style="font-size: 12px">{{d.id}} · {{d.type}}</div><h2 id="dt-t" class="h2" style="margin: 2px 0 8px">{{d.name}}</h2></div>
+<span class="chip" style="color: {{d.fg}}; background: {{d.cbg}}">{{d.stText}}</span>
+</div>
+<div class="kv"><span class="muted">사양 · 인터페이스</span><span class="mono" style="font-size: 12px; text-align: right">{{d.model}} · {{d.iface}}</span></div>
+<div class="kv"><span class="muted">수신 주기 (실측 / 기대)</span><span class="mono" style="color: {{d.rateC}}">{{d.rate}} / {{d.hz}} Hz</span></div>
+<div class="kv"><span class="muted">지연 p99 (노출→수신)</span><span class="mono">{{d.lat}}</span></div>
+<div class="kv"><span class="muted">드롭 (최근 1분)</span><span class="mono" style="color: {{d.dropC}}">{{d.drop}}</span></div>
+<div class="kv"><span class="muted">시간 동기 오차</span><span class="mono" style="color: {{d.syncC}}">{{d.sync}}</span></div>
+<div class="kv"><span class="muted">온도 · 전원</span><span class="mono">{{d.temp}} · {{d.power}}</span></div>
+<div class="kv"><span class="muted">사용하는 서비스</span><span style="font-size: 12px; text-align: right">{{d.consumers}}</span></div>
+<div style="margin-top: 10px"><div class="muted" style="font-size: 12px; margin-bottom: 4px">수신 주기 최근 30초</div>
+<div style="display: flex; align-items: flex-end; gap: 2px; height: 46px; border-bottom: 1px solid #2A313C"><sc-for list="{{d.spark}}" as="s" hint-placeholder-count="30"><div style="flex: 1; height: {{s.h}}; background: {{s.c}}; border-radius: 1px 1px 0 0"></div></sc-for></div></div>
+<div class="muted" style="font-size: 12px; margin: 12px 0 4px">데이터 품질 <span class="tag">SNS-05</span></div>
+<sc-for list="{{d.quality}}" as="q" hint-placeholder-count="4"><div class="kv"><span>{{q.k}}</span><span class="mono" style="color: {{q.c}}">{{q.v}}</span></div></sc-for>
+<div class="muted" style="font-size: 12px; margin: 12px 0 4px">캘리브레이션 <span class="tag">SNS-06</span></div>
+<div style="font-size: 13px">{{d.calib}}</div>
+<div class="muted" style="font-size: 12px; margin: 12px 0 4px">진단 (DTC) <span class="tag">SNS-08</span></div>
+<sc-if value="{{d.noDtc}}" hint-placeholder-val="{{true}}"><div style="font-size: 13px; color: #3FB950">활성 DTC 없음</div></sc-if>
+<sc-for list="{{d.dtc}}" as="x" hint-placeholder-count="1"><div style="font-size: 13px; color: {{x.c}}"><span class="mono">{{x.code}}</span> {{x.text}}</div></sc-for>
+<div style="display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 13px"><a href="LOG.dc.html">이 센서 로그</a><a href="REC.dc.html">녹화 세션</a><a href="TL.dc.html">타임라인</a></div>
+</section>
+</div>
+
+<section class="card" aria-labelledby="ls-t">
+<h2 id="ls-t" class="h2">전체 센서 <span class="sub">{{sensorCount}}개 · 행을 누르면 상세</span><span class="tag">SNS-01</span><span class="tag">SNS-02</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 900px">
+<thead><tr><th>센서</th><th>종류</th><th>인터페이스</th><th style="text-align: right">주기 (Hz)</th><th style="text-align: right">지연 p99</th><th style="text-align: right">드롭/분</th><th style="text-align: right">동기 오차</th><th style="text-align: right">온도</th><th>상태</th><th></th></tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="15">
+<tr style="background: {{r.rowBg}}">
+<td><div style="font-weight: 500">{{r.name}}</div><div class="mono muted" style="font-size: 11px">{{r.id}}</div></td>
+<td style="font-size: 12px">{{r.type}}</td>
+<td class="mono" style="font-size: 12px; color: #C9D1D9">{{r.iface}}</td>
+<td class="mono" style="font-size: 12px; text-align: right; color: {{r.rateC}}">{{r.rate}} / {{r.hz}}</td>
+<td class="mono" style="font-size: 12px; text-align: right">{{r.lat}}</td>
+<td class="mono" style="font-size: 12px; text-align: right; color: {{r.dropC}}">{{r.drop}}</td>
+<td class="mono" style="font-size: 12px; text-align: right; color: {{r.syncC}}">{{r.sync}}</td>
+<td class="mono" style="font-size: 12px; text-align: right">{{r.temp}}</td>
+<td><span class="chip" style="color: {{r.fg}}; background: {{r.cbg}}">{{r.stText}}</span></td>
+<td><button type="button" class="rowbtn" onClick="{{r.pick}}">{{r.pickLabel}}</button></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" aria-labelledby="rd-t" style="flex: 3 1 480px">
+<h2 id="rd-t" class="h2">기능별 센서 중복도 <span class="sub">인지 기능마다 살아 있는 센서 수 / 전체 (최소 필요)</span><span class="tag">SNS-07</span></h2>
+<div style="overflow-x: auto">
+<table class="tbl" style="min-width: 520px">
+<thead><tr><th>인지 기능</th><th>센서</th><th style="text-align: right">가용</th><th>판정</th></tr></thead>
+<tbody>
+<sc-for list="{{funcs}}" as="f" hint-placeholder-count="5">
+<tr><td style="font-weight: 500">{{f.name}}</td>
+<td><div style="display: flex; flex-wrap: wrap; gap: 4px"><sc-for list="{{f.sensors}}" as="s" hint-placeholder-count="3"><span class="chip mono" style="font-size: 11px; color: {{s.fg}}; background: {{s.bg}}">{{s.code}}</span></sc-for></div></td>
+<td class="mono" style="text-align: right; font-size: 12px">{{f.avail}}</td>
+<td><span class="chip" style="color: {{f.fg}}; background: {{f.cbg}}">{{f.verdict}}</span></td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="card" aria-labelledby="ts-t" style="flex: 2 1 320px">
+<h2 id="ts-t" class="h2">시간 동기 (gPTP) <span class="tag">SNS-04</span></h2>
+<div class="muted" style="font-size: 12px; margin-bottom: 8px">Grandmaster: ADCU-01 PHC · 도메인 0 · 경고 기준 100 µs</div>
+<sc-for list="{{syncs}}" as="s" hint-placeholder-count="10">
+<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px">
+<span class="mono" style="width: 52px; flex: none; font-size: 11px; color: #C9D1D9">{{s.code}}</span>
+<div style="flex: 1; position: relative; height: 10px; background: #1E252F; border-radius: 3px; overflow: hidden"><div style="position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px dashed #F85149"></div><div style="height: 10px; width: {{s.w}}; background: {{s.c}}"></div></div>
+<span class="mono" style="width: 70px; text-align: right; font-size: 11px; color: {{s.c}}">{{s.v}}</span>
+</div>
+</sc-for>
+<div class="muted" style="font-size: 11px; margin-top: 6px">막대 가운데 점선 = 100 µs. 카메라는 FSYNC 트리거 기준, CAN 센서는 수신 시각 보정 기준.</div>
+</section>
+</div>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, running: true, sc: null, s0: 0, sel: 'cam_fn' };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { if (this.state.running) this.setState({ t: this.state.t + 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const { t, running, sc, s0, sel } = this.state;
+    const el = sc ? t - s0 : -1;
+    const TONE = { ok: ['#3FB950', 'rgba(63,185,80,0.14)', '정상'], warn: ['#E3A008', 'rgba(227,160,8,0.14)', '품질 저하'], crit: ['#F85149', 'rgba(248,81,73,0.14)', '장애'], info: ['#4C9AFF', 'rgba(76,154,255,0.14)', '복구 중'] };
+    const WEDGE = { ok: 'rgba(63,185,80,0.10)', warn: 'rgba(227,160,8,0.20)', crit: 'rgba(248,81,73,0.16)', info: 'rgba(76,154,255,0.14)' };
+    const PH = { MVP: '#4C9AFF', '2단계': '#3FB9A8', '3단계': '#9AA4B2' };
+    const mkSteps = (L) => L.map((s, i) => { const n = L[i + 1]; const st = el < s.at ? 'p' : (n && el >= n.at ? 'd' : 'a'); const c = { d: ['#3FB950', '#C9D1D9', '완료'], a: ['#4C9AFF', '#E6EAF0', '진행 중'], p: ['#3A424E', '#8B95A3', '대기'] }[st]; return { at: '+' + s.at + 's', text: s.text, dot: c[0], fg: c[1], tag: c[2] }; });
+    const wv = (i, base, amp) => base + amp * Math.sin(t * 0.9 + i * 1.7);
+    const inR = (a, b) => el >= a && el < b;
+
+    const SC = {
+      dirt: { label: '전방 카메라 오염', steps: [
+        { at: 0, text: '빗물·흙이 협각 카메라 렌즈에 묻기 시작 (가림 5%)' },
+        { at: 2, text: '가림 35% → 품질 경고, 원거리 객체 confidence 하락' },
+        { at: 4, text: '가림 62% → 카메라 장애 판정, PHM Health Channel Degraded' },
+        { at: 5, text: '주행 조건 제한: 최고속도 110 → 80 km/h (레이더·LiDAR로 전방 유지)' },
+        { at: 7, text: '와셔 자동 작동' },
+        { at: 9, text: '가림 4% → 정상 복귀, 속도 제한 해제' }
+      ]},
+      lidar: { label: 'LiDAR 링크 단절', steps: [
+        { at: 0, text: '1000BASE-T1 링크 다운 (PHY 신호 손실)' },
+        { at: 1, text: '포인트 클라우드 수신 0 · 타임아웃 300 ms' },
+        { at: 2, text: '센서 융합: LiDAR 제외, 카메라+레이더 모드로 전환' },
+        { at: 3, text: 'DTC U1A20 기록, 자동 차로 변경 일시 중지' },
+        { at: 5, text: '링크 재협상 성공, 데이터 재수신' },
+        { at: 6, text: 'gPTP 재동기 중 (오차 1.8 ms → 수렴)' },
+        { at: 8, text: '동기 완료, 융합에 LiDAR 복귀' }
+      ]},
+      gnss: { label: '터널 진입 (GNSS 상실)', steps: [
+        { at: 0, text: '터널 진입: 위성 18 → 6개' },
+        { at: 1, text: 'RTK Fixed → Float' },
+        { at: 2, text: 'Fix 상실 → IMU+휠속 추측항법으로 전환' },
+        { at: 4, text: '추정 위치 오차 증가 (0.05 m → 1.2 m)' },
+        { at: 6, text: '터널 출구: 위성 재포착' },
+        { at: 8, text: 'RTK Fixed 복귀, 오차 0.05 m' }
+      ]}
+    };
+
+    // id, 이름, 종류, 사양, 인터페이스, Hz, 지연ms, x, y, 방향, 화각, 반경, 코드, 사용 서비스
+    const S = [
+      ['lid_top', '루프 LiDAR', 'LiDAR', '128ch · 360°', '1000BASE-T1', 10, 14, 220, 226, 0, 360, 190, 'LiDAR', 'perception_app, localization'],
+      ['cam_fw', '전방 광각 카메라', '카메라', '3MP · 120°', 'GMSL2', 30, 38, 244, 168, 0, 120, 130, 'C-W', 'perception_app (차선·신호등)'],
+      ['cam_fn', '전방 협각 카메라', '카메라', '8MP · 30°', 'GMSL2', 30, 41, 196, 168, 0, 30, 220, 'C-N', 'perception_app (원거리 객체)'],
+      ['rad_f', '전방 장거리 레이더', '레이더', '4D · ±10°', '100BASE-T1', 20, 22, 220, 138, 0, 22, 240, 'R-F', 'perception_app, ACC'],
+      ['rad_fl', '전방 좌 코너 레이더', '레이더', '±75°', 'CAN-FD', 20, 26, 150, 182, 315, 150, 120, 'R-FL', 'perception_app'],
+      ['rad_fr', '전방 우 코너 레이더', '레이더', '±75°', 'CAN-FD', 20, 26, 290, 182, 45, 150, 120, 'R-FR', 'perception_app'],
+      ['cam_sl', '좌측 카메라', '카메라', '3MP · 100°', 'GMSL2', 30, 39, 150, 262, 270, 100, 120, 'C-L', 'perception_app (차로 변경)'],
+      ['cam_sr', '우측 카메라', '카메라', '3MP · 100°', 'GMSL2', 30, 39, 290, 262, 90, 100, 120, 'C-R', 'perception_app (차로 변경)'],
+      ['gnss', 'GNSS / RTK', 'GNSS', 'L1/L5 · RTK', 'UART', 10, 60, 220, 290, 0, 0, 0, 'GNSS', 'localization'],
+      ['imu', 'IMU', 'IMU', '6축 · 200Hz', 'SPI', 200, 2, 220, 324, 0, 0, 0, 'IMU', 'localization'],
+      ['whl', '휠속 센서 ×4', '휠속', 'ABS 연동', 'CAN-FD', 100, 6, 220, 358, 0, 0, 0, 'WHL', 'localization, control_app'],
+      ['rad_rl', '후방 좌 코너 레이더', '레이더', '±75°', 'CAN-FD', 20, 26, 150, 392, 225, 150, 120, 'R-RL', 'perception_app (후측방)'],
+      ['rad_rr', '후방 우 코너 레이더', '레이더', '±75°', 'CAN-FD', 20, 26, 290, 392, 135, 150, 120, 'R-RR', 'perception_app (후측방)'],
+      ['cam_b', '후방 카메라', '카메라', '3MP · 120°', 'GMSL2', 30, 40, 220, 404, 180, 120, 110, 'C-B', 'perception_app, parking'],
+      ['uss', '초음파 ×12', '초음파', '0.2–5 m', 'LIN', 20, 30, 220, 440, 180, 0, 0, 'USS', 'parking']
+    ];
+
+    // ---- 시나리오별 센서 상태 ----
+    const blk = sc !== 'dirt' ? 3 : (el < 2 ? 5 + el * 10 : (el < 4 ? 35 : (el < 7 ? 62 : (el < 9 ? 30 : 4))));
+    const lidOff = sc === 'lidar' && inR(0, 5);
+    const lidSync = sc === 'lidar' && inR(5, 8);
+    const gn = sc !== 'gnss' ? { fix: 'RTK Fixed', sats: 18, err: 0.05, k: 'ok' } : (el < 1 ? { fix: 'RTK Fixed', sats: 6, err: 0.05, k: 'ok' } : (el < 2 ? { fix: 'RTK Float', sats: 5, err: 0.3, k: 'warn' } : (el < 6 ? { fix: 'No Fix (추측항법)', sats: el < 3 ? 2 : 0, err: Math.min(1.2, 0.3 + (el - 2) * 0.3), k: 'crit' } : (el < 8 ? { fix: 'RTK Float', sats: 11, err: 0.4, k: 'info' } : { fix: 'RTK Fixed', sats: 17, err: 0.05, k: 'ok' }))));
+
+    const stateOf = (id) => {
+      if (id === 'cam_fn') return blk >= 60 ? 'crit' : (blk >= 30 ? 'warn' : 'ok');
+      if (id === 'lid_top') return lidOff ? 'crit' : (lidSync ? 'info' : 'ok');
+      if (id === 'gnss') return gn.k;
+      if (id === 'cam_sr') return 'ok';
+      return 'ok';
+    };
+    const rateOf = (s, k) => {
+      const id = s[0], hz = s[5];
+      if (id === 'lid_top' && sc === 'lidar') { const e = k - s0; if (e >= 0 && e < 5) return 0; }
+      if (id === 'gnss' && sc === 'gnss') { const e = k - s0; if (e >= 2 && e < 6) return 0; }
+      return hz + (hz >= 30 ? 0.2 : 0.05) * hz * 0.02 * Math.sin(k * 1.3 + hz);
+    };
+    const syncOf = (s, i) => {
+      if (s[0] === 'lid_top' && lidOff) return null;
+      if (s[0] === 'lid_top' && lidSync) return Math.max(60, 1800 - (el - 5) * 800);
+      if (s[0] === 'gnss') return Math.abs(wv(i, 0.4, 0.2)) * 1000 / 1000 * 1;
+      return Math.abs(wv(i, s[4] === 'CAN-FD' ? 42 : (s[4] === 'GMSL2' ? 9 : 4), s[4] === 'CAN-FD' ? 8 : 2));
+    };
+    const fmtSync = (v) => v === null ? '—' : (v >= 1000 ? (v / 1000).toFixed(1) + ' ms' : v.toFixed(0) + ' µs');
+
+    const items = S.map((s, i) => {
+      const st = stateOf(s[0]);
+      const rate = rateOf(s, t);
+      const sync = syncOf(s, i);
+      const drop = s[0] === 'lid_top' && lidOff ? Math.min(600, (el + 1) * 10) * 6 : (s[0] === 'cam_fn' && blk >= 60 ? 0 : Math.max(0, Math.round(wv(i + 3, 0.4, 0.6))));
+      const temp = s[2] === '카메라' ? wv(i, 52, 1.5) : (s[2] === 'LiDAR' ? wv(i, 47, 1) : (s[2] === '레이더' ? wv(i, 61, 1.2) : wv(i, 38, 0.8)));
+      return { s, i, st, rate, sync, drop, temp };
+    });
+
+    const pins = items.map(o => {
+      const tn = TONE[o.st]; const selected = o.s[0] === sel;
+      return { x: o.s[7] + 'px', y: o.s[8] + 'px', code: o.s[12], aria: o.s[1] + ' 상세 보기',
+        bg: selected ? tn[0] : '#0E1116', fg: selected ? '#0E1116' : tn[0], bd: '2px solid ' + tn[0],
+        pick: () => this.setState({ sel: o.s[0] }) };
+    });
+    const wedges = items.filter(o => o.s[10] > 0).map(o => {
+      const s = o.s; const fov = s[10]; const start = s[9] - fov / 2;
+      const col = o.st === 'crit' ? 'rgba(248,81,73,0.06)' : WEDGE[o.st];
+      const ring = fov >= 360;
+      const bg = ring ? (o.st === 'crit' ? 'transparent' : 'rgba(63,185,80,0.03)') : 'conic-gradient(from ' + start + 'deg, ' + col + ' 0deg ' + fov + 'deg, transparent ' + fov + 'deg 360deg)';
+      const bd = ring ? '1.5px dashed ' + TONE[o.st][0] : 'none';
+      return { x: s[7] + 'px', y: s[8] + 'px', d: (s[11] * 2) + 'px', bg, bd };
+    });
+
+    const rows = items.map(o => {
+      const s = o.s, tn = TONE[o.st];
+      return { id: s[0], name: s[1], type: s[2], iface: s[4], hz: String(s[5]), rate: o.rate === 0 ? '0' : o.rate.toFixed(s[5] >= 100 ? 0 : 1),
+        rateC: o.rate < s[5] * 0.9 ? '#F85149' : '#E6EAF0', lat: s[6] + ' ms', drop: String(o.drop), dropC: o.drop > 5 ? '#F85149' : '#9AA4B2',
+        sync: fmtSync(o.sync), syncC: o.sync === null || o.sync > 100 ? '#F85149' : '#E6EAF0', temp: o.temp.toFixed(0) + '°C',
+        stText: o.st === 'crit' && s[0] === 'lid_top' ? '데이터 없음' : tn[2], fg: tn[0], cbg: tn[1],
+        rowBg: s[0] === sel ? 'rgba(76,154,255,0.10)' : (o.st === 'crit' ? 'rgba(248,81,73,0.05)' : 'transparent'),
+        pickLabel: s[0] === sel ? '선택됨' : '상세', pick: () => this.setState({ sel: s[0] }) };
+    });
+
+    // ---- 선택 센서 상세 ----
+    const cur = items.find(o => o.s[0] === sel);
+    const cs = cur.s, ctn = TONE[cur.st];
+    const spark = [];
+    for (let k = t - 29; k <= t; k++) { const r = rateOf(cs, k); spark.push({ h: Math.max(3, r / cs[5] * 90) + '%', c: r < cs[5] * 0.9 ? '#F85149' : '#3FB9A8' }); }
+    const Q = {
+      '카메라': sel === 'cam_fn'
+        ? [{ k: '렌즈 가림 (blockage)', v: blk + '%', c: blk >= 60 ? '#F85149' : (blk >= 30 ? '#E3A008' : '#E6EAF0') }, { k: '흐림 지수', v: (0.08 + blk / 120).toFixed(2), c: blk >= 30 ? '#E3A008' : '#E6EAF0' }, { k: '노출 시간', v: wv(1, 8.2, 0.4).toFixed(1) + ' ms', c: '#E6EAF0' }, { k: 'GMSL2 링크 · CRC 오류', v: 'Lock · 0', c: '#E6EAF0' }]
+        : [{ k: '렌즈 가림 (blockage)', v: '2%', c: '#E6EAF0' }, { k: '흐림 지수', v: '0.09', c: '#E6EAF0' }, { k: '노출 시간', v: wv(2, 7.9, 0.4).toFixed(1) + ' ms', c: '#E6EAF0' }, { k: 'GMSL2 링크 · CRC 오류', v: 'Lock · 0', c: '#E6EAF0' }],
+      'LiDAR': [{ k: '포인트 / 프레임', v: lidOff ? '0' : Math.round(wv(1, 241000, 3000)).toLocaleString(), c: lidOff ? '#F85149' : '#E6EAF0' }, { k: '반사 수신률', v: lidOff ? '—' : wv(2, 96.4, 0.5).toFixed(1) + '%', c: '#E6EAF0' }, { k: '이더넷 링크', v: lidOff ? 'DOWN' : '1 Gbps UP', c: lidOff ? '#F85149' : '#E6EAF0' }, { k: '윈도 오염', v: '1%', c: '#E6EAF0' }],
+      '레이더': [{ k: '검출 수 / 주기', v: String(Math.round(wv(cur.i, 46, 6))), c: '#E6EAF0' }, { k: '가림 플래그', v: '없음', c: '#E6EAF0' }, { k: '송신 출력', v: '정상', c: '#E6EAF0' }, { k: '정렬 오차 (자체 진단)', v: '0.3°', c: '#E6EAF0' }],
+      'GNSS': [{ k: 'Fix 종류', v: gn.fix, c: TONE[gn.k][0] }, { k: '위성 수', v: String(gn.sats), c: gn.sats < 6 ? '#F85149' : '#E6EAF0' }, { k: 'HDOP', v: gn.sats ? (12 / Math.max(gn.sats, 1)).toFixed(1) : '—', c: '#E6EAF0' }, { k: '추정 위치 오차', v: gn.err.toFixed(2) + ' m', c: gn.err > 0.5 ? '#F85149' : '#E6EAF0' }],
+      'IMU': [{ k: '자이로 바이어스', v: '0.002 °/s', c: '#E6EAF0' }, { k: '가속도 바이어스', v: '1.4 mg', c: '#E6EAF0' }, { k: '추측항법 사용', v: gn.k === 'crit' ? '사용 중' : '대기', c: gn.k === 'crit' ? '#4C9AFF' : '#E6EAF0' }],
+      '휠속': [{ k: '4륜 속도 일관성', v: '정상 (편차 0.2%)', c: '#E6EAF0' }, { k: '타이어 반경 보정', v: '적용됨', c: '#E6EAF0' }],
+      '초음파': [{ k: '응답 채널', v: '12 / 12', c: '#E6EAF0' }, { k: '근접 최소 거리', v: '—', c: '#E6EAF0' }]
+    };
+    const CAL = {
+      lid_top: '외부 보정 검증 11-08 · 차량 대비 편차 0.04° · 정상',
+      cam_fn: sel === 'cam_fn' && blk >= 30 ? '외부 보정 검증 11-08 · 현재 가림으로 온라인 검증 보류' : '외부 보정 검증 11-08 · 온라인 편차 0.11° (허용 0.5°)',
+      gnss: '안테나 위치 오프셋 적용 (차량 원점 기준 x 1.42 m, z 1.71 m)'
+    };
+    const dtcs = [];
+    if (sel === 'cam_fn' && blk >= 60) dtcs.push({ code: 'B1C05', text: '협각 카메라 시야 가림', c: '#F85149' });
+    if (sel === 'lid_top' && (lidOff || lidSync || (sc === 'lidar' && el >= 3))) dtcs.push({ code: 'U1A20', text: 'LiDAR 통신 두절' + (lidOff ? ' (활성)' : ' (이력)'), c: lidOff ? '#F85149' : '#9AA4B2' });
+    if (sel === 'gnss' && gn.k === 'crit') dtcs.push({ code: 'C1F11', text: 'GNSS 위치 결정 불가 (활성, 터널)', c: '#E3A008' });
+    const d = {
+      id: cs[0], name: cs[1], type: cs[2], model: cs[3], iface: cs[4], hz: String(cs[5]),
+      rate: cur.rate === 0 ? '0' : cur.rate.toFixed(cs[5] >= 100 ? 0 : 1), rateC: cur.rate < cs[5] * 0.9 ? '#F85149' : '#E6EAF0',
+      lat: cs[6] + ' ms', drop: String(cur.drop) + ' 프레임', dropC: cur.drop > 5 ? '#F85149' : '#E6EAF0',
+      sync: fmtSync(cur.sync), syncC: cur.sync === null || cur.sync > 100 ? '#F85149' : '#E6EAF0',
+      temp: cur.temp.toFixed(0) + '°C', power: cs[2] === '카메라' ? '12.0 V · 0.31 A' : (cs[2] === 'LiDAR' ? '12.1 V · ' + (lidOff ? '0.82' : '1.64') + ' A' : '12.0 V'),
+      consumers: cs[13], stText: rows.find(r => r.id === sel).stText, fg: ctn[0], cbg: ctn[1], spark,
+      quality: Q[cs[2]] || [], calib: CAL[sel] || '외부 보정 검증 11-08 · 정상', dtc: dtcs, noDtc: dtcs.length === 0
+    };
+
+    // ---- 기능별 중복도 ----
+    const stMap = {}; items.forEach(o => { stMap[o.s[0]] = o.st; });
+    const codeOf = {}; S.forEach(s => { codeOf[s[0]] = s[12]; });
+    const F = [
+      ['전방 원거리 객체', ['cam_fn', 'rad_f', 'lid_top'], 2],
+      ['차선 · 신호등 인지', ['cam_fw', 'cam_fn'], 1],
+      ['측방 · 차로 변경', ['cam_sl', 'cam_sr', 'rad_fl', 'rad_fr', 'rad_rl', 'rad_rr', 'lid_top'], 6],
+      ['자차 측위', ['gnss', 'imu', 'whl', 'lid_top'], 3],
+      ['주차 · 근거리', ['uss', 'cam_b'], 2]
+    ];
+    const funcs = F.map(f => {
+      const avail = f[1].filter(id => stMap[id] === 'ok' || stMap[id] === 'info').length;
+      const total = f[1].length;
+      const k = avail === total ? 'ok' : (avail >= f[2] ? 'warn' : 'crit');
+      return { name: f[0], avail: avail + ' / ' + total + ' (' + f[2] + ')', verdict: k === 'ok' ? '정상' : (k === 'warn' ? '중복도 감소' : '기능 제한'), fg: TONE[k][0], cbg: TONE[k][1],
+        sensors: f[1].map(id => ({ code: codeOf[id], fg: TONE[stMap[id]][0], bg: TONE[stMap[id]][1] })) };
+    });
+
+    // ---- 주행 조건(ODD) 영향 배너 ----
+    let odd = null;
+    if (sc === 'dirt' && el >= 5 && el < 9) odd = { title: '주행 조건 제한', text: '전방 협각 카메라 장애로 최고속도 110 → 80 km/h 제한 중. 전방 객체는 레이더·LiDAR로 유지합니다.', k: 'warn' };
+    if (sc === 'lidar' && el >= 2 && el < 8) odd = { title: '센서 융합 모드 변경', text: 'LiDAR 제외 (카메라+레이더). 자동 차로 변경 일시 중지, 측방 중복도 감소.', k: 'warn' };
+    if (sc === 'gnss' && el >= 2 && el < 6) odd = { title: '측위 신뢰도 낮음', text: 'GNSS 상실 — IMU·휠속 추측항법 중. 차로 단위 경로 안내 정확도가 떨어질 수 있습니다.', k: 'info' };
+    const oddOut = odd ? { title: odd.title, text: odd.text, fg: TONE[odd.k][0], bg: TONE[odd.k][1], bd: TONE[odd.k][0] } : { title: '', text: '', fg: '', bg: '', bd: '' };
+
+    const syncs = items.filter(o => ['lid_top', 'cam_fn', 'cam_fw', 'cam_sl', 'cam_sr', 'cam_b', 'rad_f', 'rad_fl', 'rad_rr', 'imu'].indexOf(o.s[0]) >= 0).map(o => {
+      const v = o.sync; const w = v === null ? 100 : Math.min(100, v / 200 * 100);
+      return { code: o.s[12], w: w + '%', v: fmtSync(v), c: v === null || v > 100 ? '#F85149' : (v > 60 ? '#E3A008' : '#3FB9A8') };
+    });
+
+    const okN = items.filter(o => o.st === 'ok').length;
+    const warnN = items.filter(o => o.st === 'warn' || o.st === 'info').length;
+    const critN = items.filter(o => o.st === 'crit').length;
+    const maxSync = Math.max(...items.map(o => o.sync === null ? 0 : o.sync));
+    const kpis = [
+      { label: '센서 정상', v: okN + ' / ' + S.length, sub: '15개 · 5종', c: okN === S.length ? '#3FB950' : '#E6EAF0' },
+      { label: '품질 저하 · 복구 중', v: String(warnN), sub: '가림, 동기 수렴, Float 등', c: warnN ? '#E3A008' : '#E6EAF0' },
+      { label: '장애 · 데이터 없음', v: String(critN), sub: '인지 기능 영향 확인', c: critN ? '#F85149' : '#E6EAF0' },
+      { label: 'gPTP 최대 오차', v: fmtSync(maxSync), sub: '기준 100 µs', c: maxSync > 100 ? '#F85149' : '#E6EAF0' },
+      { label: '주행 조건', v: odd ? '제한' : '정상', sub: odd ? odd.title : '모든 인지 기능 가용', c: odd ? '#E3A008' : '#3FB950' }
+    ];
+
+    const spec = [
+      ['SNS-01', '센서 목록·상태', '센서별 정상 / 품질 저하 / 장애 / 데이터 없음', 'MVP'],
+      ['SNS-02', '수신 주기·지연·드롭', '프레임 시퀀스·타임스탬프로 Hz, p99 지연, 누락 계산', 'MVP'],
+      ['SNS-03', '배치·감지 범위 맵', '차량 위 센서 위치와 화각, 장애 시 사각지대 표시', '2단계'],
+      ['SNS-04', '시간 동기 (gPTP)', 'ptp4l·phc2sys 오차, 카메라 트리거 skew', 'MVP'],
+      ['SNS-05', '데이터 품질 지표', '카메라 가림·흐림, LiDAR 포인트 수, GNSS Fix·HDOP', '2단계'],
+      ['SNS-06', '캘리브레이션 상태', '외부 보정 검증일, 온라인 편차 추정', '3단계'],
+      ['SNS-07', '기능별 중복도', '인지 기능마다 가용 센서 수와 최소 요구, 주행 조건 영향', '2단계'],
+      ['SNS-08', '진단·전원·온도', 'DTC, 공급 전압·전류, 센서 온도', '2단계'],
+      ['SNS-09', '장애 시 자동 녹화', '센서 장애 전후 원본 데이터 REC 세션 저장', '3단계']
+    ].map(s => ({ id: s[0], name: s[1], desc: s[2], ph: s[3], pc: PH[s[3]] }));
+    const scenarios = Object.keys(SC).map(k => ({ label: SC[k].label, run: () => this.setState({ sc: k, s0: this.state.t, running: true, sel: k === 'dirt' ? 'cam_fn' : (k === 'lidar' ? 'lid_top' : 'gnss') }), bg: sc === k ? '#4C9AFF' : '#0E1116', fg: sc === k ? '#0E1116' : '#E6EAF0' }));
+    return {
+      t, runLabel: running ? '일시정지' : '재생', toggle: () => this.setState({ running: !this.state.running }),
+      reset: () => this.setState({ t: 0, sc: null, s0: 0, running: true, sel: 'cam_fn' }),
+      scenarios, noSc: !sc, hasSc: !!sc, scTitle: sc ? SC[sc].label : '', steps: sc ? mkSteps(SC[sc].steps) : [],
+      spec, specCount: spec.length, kpis, pins, wedges, rows, sensorCount: String(S.length), d, funcs, syncs, odd: oddOut, oddOn: !!odd
+    };
+  }
+}
+</script>
+</body>
+</html>
