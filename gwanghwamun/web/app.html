@@ -1,0 +1,440 @@
+<title>광화문 조립대</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* layout: one-screen workbench — slim header, part tray on the left (bottom sheet on phones), 3D stage, step rail along the bottom */
+:root{
+  --bg:#e4e6e2; --panel:#f3f4f1; --ink:#1d2421; --muted:#5d6762; --line:#c9cec8;
+  --accent:#8c3a2b; --accent-ink:#fff; --ok:#2f7a5a; --warn:#b5532f; --stage:#d9ddd7;
+  --f-display:"Gowun Batang","Nanum Myeongjo",serif; --f-ui:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#171b19; --panel:#1f2522; --ink:#e7ebe8; --muted:#9aa49f; --line:#323a36;
+  --accent:#c4614c; --accent-ink:#fff; --ok:#5fb08a; --warn:#d9825f; --stage:#121513; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171b19; --panel:#1f2522; --ink:#e7ebe8; --muted:#9aa49f; --line:#323a36;
+  --accent:#c4614c; --accent-ink:#fff; --ok:#5fb08a; --warn:#d9825f; --stage:#121513; color-scheme:dark}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;overflow:hidden}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:280px 1fr;grid-template-areas:"top top" "tray stage" "rail rail"}
+header{grid-area:top;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--line);background:var(--panel)}
+h1{font-family:var(--f-display);font-size:19px;margin:0;letter-spacing:.02em;white-space:nowrap}
+h1 small{font-family:var(--f-ui);font-weight:400;font-size:12px;color:var(--muted);margin-left:6px}
+.prog{display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.bar{width:120px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:transparent}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.spacer{flex:1}
+button{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:default}
+.tray{grid-area:tray;overflow:auto;border-right:1px solid var(--line);background:var(--panel);padding-block:12px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:12px;display:flex;flex-direction:column;gap:10px}
+.tray h2{font-size:12px;letter-spacing:.08em;color:var(--muted);margin:2px 0 0;font-weight:600}
+.stepname{font-family:var(--f-display);font-size:17px;margin:0}
+.hint{color:var(--muted);font-size:12.5px;line-height:1.5;margin:0}
+.parts{display:flex;flex-direction:column;gap:6px}
+.part{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:8px;text-align:left;padding:8px 10px}
+.part .sw{width:12px;height:12px;border-radius:3px}
+.part .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.part .ct{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12.5px}
+.part.done{opacity:.5}
+.part[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.stage{grid-area:stage;position:relative;background:var(--stage);min-height:0;min-width:0}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.float{position:absolute;display:flex;gap:6px;flex-wrap:wrap}
+.float.tl{top:10px;left:10px}
+.float.tr{top:10px;right:max(10px,env(safe-area-inset-right,0px));justify-content:flex-end;max-width:60%}
+.float.bl{bottom:10px;left:10px}
+.chip{font-size:12.5px;padding:4px 9px;border-radius:999px;background:var(--panel)}
+.chip[aria-pressed="false"]{opacity:.5}
+.chip .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.card{position:absolute;right:max(10px,env(safe-area-inset-right,0px));bottom:10px;width:min(300px,calc(100% - 20px));background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.card h3{margin:0;font-family:var(--f-display);font-size:16px}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0;font-size:12.5px}
+.card dt{color:var(--muted)} .card dd{margin:0;font-variant-numeric:tabular-nums;word-break:break-all}
+.card .row{display:flex;gap:6px;flex-wrap:wrap}
+.toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:6px 12px;border-radius:999px;font-size:13px;pointer-events:none;opacity:0;transition:opacity .2s}
+.toast.on{opacity:.92}
+.carry{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);border-radius:999px;padding:6px 8px 6px 14px;display:flex;gap:8px;align-items:center;font-size:13px}
+.rail{grid-area:rail;display:flex;gap:6px;align-items:center;overflow-x:auto;padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-top:1px solid var(--line);background:var(--panel)}
+.step{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:6px 10px;min-width:74px}
+.step b{font-weight:600;font-size:13px}
+.step .mini{width:100%;height:3px;border-radius:2px;background:var(--line);overflow:hidden}
+.step .mini i{display:block;height:100%;background:var(--ok)}
+.step[aria-current="step"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.step .num{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.seqbar{display:flex;align-items:center;gap:10px;flex:1;min-width:260px}
+.seqbar input{flex:1}
+.confirm{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.35)}
+.confirm>div{background:var(--panel);border-radius:12px;padding:16px;max-width:300px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--line)}
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted)}
+@media (max-width:760px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr auto auto;grid-template-areas:"top" "stage" "tray" "rail"}
+  .tray{border-right:0;border-top:1px solid var(--line);max-height:34vh;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .bar{width:70px}
+  h1 small{display:none}
+  .float.tr{top:48px;left:10px;right:10px;max-width:none;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding-bottom:2px}
+  .float.tr .chip{flex:0 0 auto}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app" id="app">
+  <header>
+    <h1>광화문 조립대<small>1/40 · 단위 mm</small></h1>
+    <div class="prog"><div class="bar"><i id="pbar"></i></div><span id="ptext">0 / 0</span></div>
+    <div class="seg" role="group" aria-label="모드">
+      <button id="mBuild" aria-pressed="true">직접 조립</button>
+      <button id="mSeq" aria-pressed="false">순서 보기</button>
+    </div>
+    <div class="spacer"></div>
+    <button id="bReset">처음부터</button>
+  </header>
+
+  <aside class="tray" id="tray">
+    <div>
+      <h2 id="trayStepNo">단계 1</h2>
+      <p class="stepname" id="trayStepName">기둥</p>
+    </div>
+    <p class="hint" id="trayHint">부재를 누르면 손에 들려요. 화면에서 끌어 제자리 근처에 놓으면 착 붙어요. 비어 있는 자리는 반투명으로 보여요.</p>
+    <div class="parts" id="parts"></div>
+    <button id="bFillStep">이 단계 한 번에 채우기</button>
+    <p class="hint">마우스: 끌기 회전 · 오른쪽 끌기 이동 · 휠 확대<br>터치: 한 손가락 회전 · 두 손가락 확대·이동<br>들고 있을 때: R 또는 [90° 돌리기], Esc 내려놓기<br>끼운 부재를 누르면 정보와 [빼기]가 나와요.</p>
+  </aside>
+
+  <main class="stage" id="stage">
+    <canvas id="cv" aria-label="3D 조립 화면"></canvas>
+    <div class="loading" id="loading">부재 불러오는 중…</div>
+    <div class="float tl">
+      <button class="chip" id="tGhost" aria-pressed="true">빈 자리 보기</button>
+      <button class="chip" id="tAllGhost" aria-pressed="false">완성 모습</button>
+      <button class="chip" id="bHome">처음 시점</button>
+    </div>
+    <div class="float tr" id="catChips"></div>
+    <div class="float bl"><label class="chip" for="explode" style="display:flex;gap:6px;align-items:center">벌려 보기 <input type="range" id="explode" min="0" max="30" value="0" style="width:90px"></label></div>
+    <div class="carry" id="carry" hidden><span id="carryName"></span><button id="bRot">90° 돌리기</button><button id="bDrop">내려놓기</button></div>
+    <div class="card" id="card" hidden>
+      <h3 id="cName"></h3>
+      <dl>
+        <dt>종류</dt><dd id="cCat"></dd>
+        <dt>크기</dt><dd id="cSize"></dd>
+        <dt>필요 개수</dt><dd id="cCount"></dd>
+        <dt>STL 파일</dt><dd id="cFile"></dd>
+      </dl>
+      <div class="row"><button id="cRemove">빼기</button><button id="cTake">같은 부재 들기</button><button id="cClose">닫기</button></div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <div class="confirm" id="confirm" hidden><div><span id="confirmText"></span><div class="row" style="display:flex;gap:8px;justify-content:flex-end"><button id="cfNo">취소</button><button class="primary" id="cfYes">확인</button></div></div></div>
+  </main>
+
+  <nav class="rail" id="rail" aria-label="조립 단계"></nav>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>/*DATA*/</script>
+<script>
+(function(){
+const D = window.GW_DATA;
+const STEPS = ['육축','대문','문루 둘레 담','기둥','창방','평방','주두','공포 1단','공포 2단','공포 3단','공포 4단','공포 5~7단','장여','도리','대량·충량','2층 평주','2층 창방','2층 평방','2층 주두','2층 공포 1단','2층 공포 2단','2층 공포 3단','2층 공포 4단','2층 공포 5~7단','2층 대량·충량','2층 장여','2층 도리·뜬창방','2층 마루 귀틀','2층 마루널','1층 추녀·사래','1층 서까래','1층 부연','2층 지붕틀','2층 추녀·사래','2층 서까래','2층 부연'];
+const NS = STEPS.length;
+const STEP_HINT = [
+  '육축: 돌로 쌓은 문 밑 축대 10조각(앞·뒤 반쪽 × 5)과 양끝 계단 2개. 조각 사이 네모 구멍에 다월핀(3mm)을 끼워 맞춰요. 가운데 문루 자리(기단)가 기둥 밑면(0)이에요.',
+  '대문: 홍예마다 두 짝, 앞쪽 홍예석 바로 뒤에 세워요. 앞·뒤 반쪽을 붙이기 전에 넣어요.',
+  '문루 둘레 담(여장): 기단 가장자리 턱에 앞·뒤 5토막씩, 옆은 문 자리(뒤쪽)를 비우고 2토막씩.',
+  '기둥 28개: 귀주·평주·간주·평고주·귀고주. 육축 가운데 문루 기단 위에 세워요.',
+  '창방 10개를 기둥 머리 홈에 끼워요.',
+  '평방 10개를 창방 위에 얹어요. 모서리는 반턱으로 겹쳐요.',
+  '주두 50개(귀주두 4 포함)를 평방 위 공포 자리에 놓아요.',
+  '1단: 주심 소첨과 초제공(살미), 그 위 소로. 귀포는 정면·측면·귀살미 순서로 끼워요.',
+  '2단: 대첨·소첨과 이제공, 소로.',
+  '3단: 첨차와 익공, 소로.',
+  '4단: 사제공, 내2·내3 첨차, 귀포 4단과 모서리 장여.',
+  '5~7단: 안쪽 구름 살미(오·육·칠제공)와 모서리 주심 장여.',
+  '장여: 외목·외1·주심·내1·내2·내3 열. 주심포 자리는 대량이 들어갈 곳이라 비어 있어요.',
+  '도리: 외목·주심·내목 도리. 모서리는 왕지 반턱. 내목도리는 2층 평주 자리에서 가는 목(3mm)으로 지나가요.',
+  '대량 4개(앞뒤 주심포 → 평고주)와 충량 2개(옆 주심포 → 평고주). 보머리는 외목도리·주심도리 밑에 받치고, 끝 장부를 평고주 구멍에 끼워요.',
+  '2층 평주 6개를 대량·충량 위 내3출목 자리에 세워요. 밑 홈으로 1층 내3장여·내목도리 목을 타고 앉아요.',
+  '2층 창방 10개. 귀고주에서 정면 창방이 아래 반, 측면 창방이 위 반으로 반턱.',
+  '2층 평방 10개. 모서리는 정면이 위 반, 측면이 아래 반.',
+  '2층 주두 42개(귀주두 4 포함). 2층 평방 위 공포 자리에 놓아요.',
+  '2층 1단: 1층과 같은 짜임. 살미 안쪽 끝만 짧아요. 귀포는 1층 귀포와 같은 부재예요.',
+  '2층 2단.',
+  '2층 3단. 주심포 익공은 주간포보다 안쪽이 길어요.',
+  '2층 4단. 주심포에도 내2 대첨·내3 소첨이 들어가요.',
+  '2층 5~7단: 안쪽 구름 살미. 5·7단은 뜬창방 자리를 피해 깎여 있어요. 모서리옆 주간포는 꼬리가 짧아요.',
+  '2층 대량 4개·충량 2개. 끝 장부를 평고주 꼭대기 갈에 위에서 내려 끼워요. 윗면 홈에 뜬창방이 얹혀요.',
+  '2층 장여. 내3 장여는 모서리에서 반턱으로 엇갈려요.',
+  '2층 도리와 뜬창방. 뜬창방 모서리 반턱 밑에 연봉이 달려요.',
+  '2층 마루 귀틀: 장귀틀(9x7)을 기둥 구멍에 끼우고 둘레 귀틀, 세로 동귀틀(아래 반), 가로 동귀틀(위 반) 순서로 반턱을 맞춰요. 오른쪽 뒤에 계단 구멍.',
+  '2층 마루널: 칸마다 한 판(두께 1.4). 귀틀 윗모서리 턱에 얹어요.',
+  '1층 추녀 4개(꼬리는 귀고주에 닿음)와 그 위 사래 4개.',
+  '1층 서까래: 가운데는 나란한 평연, 귀는 한쪽마다 선자연 11개를 한 덩어리로. 꼬리는 2층 벽선(내목도리)에서 끝나요.',
+  '1층 부연: 서까래 끝 위에 얹어 더 내밀어요. 귀로 갈수록 높이 들려요(앙곡).',
+  '2층 지붕틀: 뜬창방 위 동자주, 중도리(네 귀 왕지), 종량 2, 대공 4, 종도리.',
+  '2층 추녀·사래: 추녀 안쪽 끝이 중도리 왕지에 얹혀요.',
+  '2층 서까래: 장연(중도리까지), 귀 선자연 덩어리, 위쪽 단연과 귀단연.',
+  '2층 부연.'];
+const CAT_COLOR = {
+  '육축':'#a39e93','계단':'#8f8a80','대문':'#6e3b22','담':'#9b5a45','기둥':'#8c3a2b','창방':'#3e7b66','평방':'#4c8a6f','주두':'#c9913d','소로':'#d9a656',
+  '첨차':'#2f6e8e','살미':'#5c8f45','귀포':'#b5532f','장여':'#356a59','도리':'#7a5f3e','보':'#6b4a8a','귀틀':'#8a6d3b','마루':'#c2a072','지붕틀':'#6d5a3e','추녀':'#9a4a2a','서까래':'#a8834f','부연':'#2f6e8e'};
+const CATS = Object.keys(CAT_COLOR);
+const LS_KEY = 'gw-assembly-v3';
+
+// ---------- decode ----------
+function b64(s){const bin=atob(s);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer;}
+const geoms = D.geoms.map(g=>{
+  const q=new Int16Array(b64(g.v)); const idx=g.big?new Uint32Array(b64(g.i)):new Uint16Array(b64(g.i));
+  const pos=new Float32Array(q.length);
+  for(let i=0;i<q.length;i+=3){pos[i]=g.c[0]+q[i]*0.005;pos[i+1]=g.c[1]+q[i+1]*0.005;pos[i+2]=g.c[2]+q[i+2]*0.005;}
+  let geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pos,3)); geo.setIndex(new THREE.BufferAttribute(idx,1));
+  geo=geo.toNonIndexed(); geo.computeVertexNormals(); geo.computeBoundingBox();
+  const c=new THREE.Vector3(); geo.boundingBox.getCenter(c);
+  return {...g, geo, center:c};
+});
+const mats = new Float32Array(b64(D.inst.m));
+const inst = D.inst.g.map((g,i)=>{
+  const m=new THREE.Matrix4(); const o=i*12;
+  m.set(mats[o],mats[o+1],mats[o+2],mats[o+3],mats[o+4],mats[o+5],mats[o+6],mats[o+7],mats[o+8],mats[o+9],mats[o+10],mats[o+11],0,0,0,1);
+  const c=geoms[g].center.clone().applyMatrix4(m);
+  return {i, g, step:D.inst.s[i], m, c};
+});
+const byGeom = geoms.map(()=>[]); inst.forEach(s=>byGeom[s.g].push(s.i));
+const N = inst.length;
+
+// ---------- state ----------
+let placed = new Uint8Array(N);
+let curStep = 1, mode = 'build', showGhost = true, allGhost = false, explode = 0;
+const catOn = Object.fromEntries(CATS.map(c=>[c,true]));
+let seqStep = NS;
+function save(){try{let s='';for(let i=0;i<N;i+=6){let v=0;for(let k=0;k<6;k++)if(placed[i+k])v|=1<<k;s+=String.fromCharCode(48+v);}localStorage.setItem(LS_KEY,JSON.stringify({p:s,step:curStep}));}catch(e){}}
+function load(){try{const o=JSON.parse(localStorage.getItem(LS_KEY)||'null');if(!o)return;for(let i=0,j=0;i<N;i+=6,j++){const v=(o.p.charCodeAt(j)||48)-48;for(let k=0;k<6&&i+k<N;k++)placed[i+k]=(v>>k)&1;}if(o.step)curStep=o.step;}catch(e){}}
+load();
+
+// ---------- three ----------
+const cv=document.getElementById('cv'), stage=document.getElementById('stage');
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(35,1,1,5000); camera.up.set(0,0,1);
+const controls=new THREE.OrbitControls(camera,cv); controls.enableDamping=true; controls.dampingFactor=0.12; controls.screenSpacePanning=true;
+function home(){camera.position.set(-700,-1050,480);controls.target.set(0,0,0);controls.update();}
+home();
+scene.add(new THREE.HemisphereLight(0xffffff,0x8a8f88,0.75));
+const sun=new THREE.DirectionalLight(0xffffff,0.75); sun.position.set(-300,-500,800); scene.add(sun);
+const fill=new THREE.DirectionalLight(0xffffff,0.25); fill.position.set(400,300,200); scene.add(fill);
+// ground: 땅 (육축 바닥 z -179)
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+const groundMat=new THREE.MeshLambertMaterial({color:0xb9beb6});
+const ground=new THREE.Mesh(new THREE.BoxGeometry(1500,700,2),groundMat); ground.position.set(0,0,-180); scene.add(ground);
+const grid=new THREE.GridHelper(1500,75,0x99a097,0xaab0a8); grid.rotation.x=Math.PI/2; grid.position.z=-178.95; scene.add(grid);
+grid.material.transparent=true; grid.material.opacity=0.35;
+
+// per geometry: solid + ghost instanced meshes
+const solidMat={}, ghostMat=new THREE.MeshBasicMaterial({color:0x5d6762,transparent:true,opacity:0.18,depthWrite:false});
+CATS.forEach(c=>solidMat[c]=new THREE.MeshLambertMaterial({color:new THREE.Color(CAT_COLOR[c])}));
+const solid=[], ghost=[];
+geoms.forEach((g,gi)=>{
+  const n=byGeom[gi].length;
+  const s=new THREE.InstancedMesh(g.geo,solidMat[g.cat],n); s.count=0; s.userData.gi=gi; s.frustumCulled=false; scene.add(s); solid.push(s);
+  const h=new THREE.InstancedMesh(g.geo,ghostMat,n); h.count=0; h.frustumCulled=false; h.renderOrder=2; scene.add(h); ghost.push(h);
+});
+const tmp=new THREE.Matrix4(), off=new THREE.Matrix4();
+function stepOffset(st){return explode*(st-1);}
+function refreshGeom(gi){
+  const S=solid[gi], H=ghost[gi]; const cat=geoms[gi].cat; let ns=0, nh=0;
+  S.userData.ids=[];
+  for(const id of byGeom[gi]){
+    const s=inst[id];
+    off.makeTranslation(0,0,stepOffset(s.step)); tmp.multiplyMatrices(off,s.m);
+    const visibleSolid = catOn[cat] && (mode==='seq' ? s.step<=seqStep : placed[id]);
+    if(visibleSolid){S.setMatrixAt(ns,tmp);S.userData.ids[ns]=id;ns++;}
+    else if(mode==='build' && catOn[cat] && !placed[id] && (allGhost || (showGhost && s.step===curStep))){H.setMatrixAt(nh++,tmp);}
+  }
+  S.count=ns; H.count=nh; S.instanceMatrix.needsUpdate=true; H.instanceMatrix.needsUpdate=true;
+}
+function refreshAll(){for(let gi=0;gi<geoms.length;gi++)refreshGeom(gi);}
+
+// ---------- UI ----------
+const $=id=>document.getElementById(id);
+function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('on'),1600);}
+function stepStats(st){let n=0,p=0;for(const s of inst)if(s.step===st){n++;if(placed[s.i])p++;}return [p,n];}
+function totalStats(){let p=0;for(let i=0;i<N;i++)p+=placed[i];return p;}
+function renderProgress(){
+  const p=totalStats(); $('ptext').textContent=`${p.toLocaleString()} / ${N.toLocaleString()}`; $('pbar').style.width=(100*p/N)+'%';
+  rail.querySelectorAll('.step').forEach((b,k)=>{const [a,n]=stepStats(k+1);b.querySelector('.mini i').style.width=(n?100*a/n:0)+'%';b.querySelector('.num').textContent=`${a}/${n}`;});
+}
+const rail=$('rail');
+function buildRail(){
+  rail.innerHTML='';
+  if(mode==='seq'){
+    const wrap=document.createElement('div'); wrap.className='seqbar';
+    wrap.innerHTML=`<button id="sPlay">▶ 재생</button><input type="range" id="sRange" min="1" max="${NS}" value="${seqStep}" aria-label="조립 순서"><span id="sLabel" style="min-width:110px"></span>`;
+    rail.appendChild(wrap);
+    const r=$('sRange'), lb=$('sLabel');
+    const upd=()=>{seqStep=+r.value;lb.textContent=`${seqStep}. ${STEPS[seqStep-1]}`;refreshAll();};
+    r.oninput=upd; upd();
+    let timer=null;
+    $('sPlay').onclick=()=>{if(timer){clearInterval(timer);timer=null;$('sPlay').textContent='▶ 재생';return;}
+      if(+r.value>=NS){r.value=1;upd();}
+      $('sPlay').textContent='❚❚ 멈춤';
+      timer=setInterval(()=>{if(+r.value>=NS){clearInterval(timer);timer=null;$('sPlay').textContent='▶ 재생';return;}r.value=+r.value+1;upd();},1100);};
+    return;
+  }
+  STEPS.forEach((nm,k)=>{
+    const b=document.createElement('button'); b.className='step';
+    b.innerHTML=`<span class="num"></span><b>${k+1}. ${nm}</b><span class="mini"><i></i></span>`;
+    if(k+1===curStep)b.setAttribute('aria-current','step');
+    b.onclick=()=>{curStep=k+1;save();buildRail();buildTray();refreshAll();};
+    rail.appendChild(b);
+  });
+  renderProgress();
+}
+function buildTray(){
+  const box=$('parts'); box.innerHTML='';
+  $('trayStepNo').textContent=mode==='seq'?'순서 보기':`단계 ${curStep} / ${NS}`;
+  $('trayStepName').textContent=mode==='seq'?STEPS[seqStep-1]:STEPS[curStep-1];
+  $('trayHint').textContent=mode==='seq'?'아래 막대를 밀거나 재생을 누르면 짜는 순서대로 쌓여요. 직접 끼운 기록에는 영향이 없어요.':STEP_HINT[curStep-1];
+  $('bFillStep').hidden=mode==='seq';
+  if(mode==='seq')return;
+  const list=[];
+  geoms.forEach((g,gi)=>{let n=0,p=0;for(const id of byGeom[gi])if(inst[id].step===curStep){n++;if(placed[id])p++;}if(n)list.push({gi,n,p});});
+  list.sort((a,b)=>CATS.indexOf(geoms[a.gi].cat)-CATS.indexOf(geoms[b.gi].cat)||geoms[a.gi].name.localeCompare(geoms[b.gi].name,'ko'));
+  for(const it of list){
+    const g=geoms[it.gi]; const b=document.createElement('button'); b.className='part'+(it.p>=it.n?' done':'');
+    b.setAttribute('aria-pressed',carry&&carry.gi===it.gi?'true':'false');
+    b.innerHTML=`<span class="sw" style="background:${CAT_COLOR[g.cat]}"></span><span class="nm">${g.name}</span><span class="ct">${it.n-it.p} 남음</span>`;
+    b.title=`${g.name} · ${g.file}`;
+    b.onclick=()=>{if(it.p>=it.n){toast('이 부재는 다 끼웠어요');return;}takePart(it.gi);};
+    box.appendChild(b);
+  }
+}
+function buildCats(){
+  const box=$('catChips'); box.innerHTML='';
+  CATS.forEach(c=>{const b=document.createElement('button');b.className='chip';b.setAttribute('aria-pressed',catOn[c]);
+    b.innerHTML=`<span class="sw" style="background:${CAT_COLOR[c]}"></span>${c}`;
+    b.onclick=()=>{catOn[c]=!catOn[c];b.setAttribute('aria-pressed',catOn[c]);refreshAll();};box.appendChild(b);});
+}
+
+// ---------- carrying & snapping ----------
+let carry=null; // {gi, mesh, yaw, plane z}
+const carryMat=new THREE.MeshLambertMaterial({color:0xffffff,emissive:0x442a1a,transparent:true,opacity:0.92});
+const snapMat=new THREE.MeshLambertMaterial({color:0xffffff,emissive:0x1f5a3e});
+function freeSlots(gi){return byGeom[gi].filter(id=>!placed[id]&&inst[id].step===curStep);}
+function takePart(gi){
+  dropCarry(false);
+  const slots=freeSlots(gi); if(!slots.length){toast('남은 자리가 없어요');return;}
+  const zs=slots.map(id=>inst[id].c.z).sort((a,b)=>a-b);
+  const mesh=new THREE.Mesh(geoms[gi].geo,carryMat); mesh.renderOrder=3; scene.add(mesh);
+  carry={gi,mesh,yaw:0,z:zs[zs.length>>1]+stepOffset(curStep),pos:new THREE.Vector3(controls.target.x,controls.target.y,0),snap:null};
+  // start above the nearest free slot to the view centre
+  let best=slots[0],bd=1e9;for(const id of slots){const d=inst[id].c.distanceTo(controls.target);if(d<bd){bd=d;best=id;}}
+  carry.pos.set(inst[best].c.x+18,inst[best].c.y-18,carry.z);
+  controls.enableRotate=false;
+  $('carry').hidden=false; $('carryName').textContent=geoms[gi].name+` · ${slots.length}자리`;
+  updateCarry(); buildTray(); $('card').hidden=true;
+}
+function dropCarry(keep){
+  if(!carry)return; scene.remove(carry.mesh); carry=null; controls.enableRotate=true; $('carry').hidden=true; if(!keep)buildTray();
+}
+const SNAP_R=5.0;
+function updateCarry(){
+  if(!carry)return;
+  const slots=freeSlots(carry.gi); let best=null,bd=SNAP_R;
+  for(const id of slots){const c=inst[id].c;const d=Math.hypot(c.x-carry.pos.x,c.y-carry.pos.y)+0.002*c.z;if(d<bd){bd=d;best=id;}}
+  carry.snap=best;
+  const g=geoms[carry.gi];
+  if(best!==null){
+    const s=inst[best]; off.makeTranslation(0,0,stepOffset(s.step)); carry.mesh.matrixAutoUpdate=false;
+    carry.mesh.matrix.multiplyMatrices(off,s.m); carry.mesh.material=snapMat;
+  }else{
+    // free floating: centre the geometry at the pointer, apply yaw
+    const m=new THREE.Matrix4().makeTranslation(carry.pos.x,carry.pos.y,carry.pos.z);
+    m.multiply(new THREE.Matrix4().makeRotationZ(carry.yaw)); m.multiply(new THREE.Matrix4().makeTranslation(-g.center.x,-g.center.y,-g.center.z));
+    carry.mesh.matrixAutoUpdate=false; carry.mesh.matrix.copy(m); carry.mesh.material=carryMat;
+  }
+}
+function placeSnap(){
+  if(!carry||carry.snap===null)return false;
+  const id=carry.snap, gi=carry.gi; placed[id]=1; save(); refreshGeom(gi); renderProgress();
+  const left=freeSlots(gi).length;
+  toast(left?`착! ${geoms[gi].name} — ${left}자리 남음`:`${geoms[gi].name} 다 끼웠어요`);
+  if(left){const keepPos=carry.pos.clone();carry.snap=null;$('carryName').textContent=geoms[gi].name+` · ${left}자리`;carry.pos.copy(keepPos).add(new THREE.Vector3(10,-10,0));updateCarry();buildTray();}
+  else{dropCarry(false);}
+  const [a,n]=stepStats(curStep); if(a===n&&curStep<NS)toast(`${STEPS[curStep-1]} 단계 완료! 다음 단계로 넘어가 보세요`);
+  return true;
+}
+// pointer
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+function setNdc(e){const r=cv.getBoundingClientRect();ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);}
+function planePoint(e,z){setNdc(e);ray.setFromCamera(ndc,camera);const p=new THREE.Plane(new THREE.Vector3(0,0,1),-z);const v=new THREE.Vector3();return ray.ray.intersectPlane(p,v)?v:null;}
+let dragging=false, downXY=null;
+cv.addEventListener('pointerdown',e=>{
+  downXY=[e.clientX,e.clientY];
+  if(carry&&e.button===0&&e.pointerType!=='touch'||carry&&e.pointerType==='touch'&&e.isPrimary){dragging=true;cv.setPointerCapture(e.pointerId);const v=planePoint(e,carry.z);if(v){carry.pos.set(v.x,v.y,carry.z);updateCarry();}}
+});
+cv.addEventListener('pointermove',e=>{
+  if(!carry)return;
+  if(dragging||e.pointerType==='mouse'){const v=planePoint(e,carry.z);if(v){carry.pos.set(v.x,v.y,carry.z);updateCarry();}}
+});
+cv.addEventListener('pointerup',e=>{
+  const moved=downXY?Math.hypot(e.clientX-downXY[0],e.clientY-downXY[1]):0;
+  if(carry){if(dragging||(e.pointerType==='mouse'&&e.button===0))placeSnap();dragging=false;return;}
+  if(moved<5&&mode==='build')pick(e);
+});
+window.addEventListener('keydown',e=>{if(e.key==='Escape'){dropCarry(false);$('card').hidden=true;}if((e.key==='r'||e.key==='R')&&carry){carry.yaw+=Math.PI/2;updateCarry();}});
+$('bRot').onclick=()=>{if(carry){carry.yaw+=Math.PI/2;updateCarry();}};
+$('bDrop').onclick=()=>dropCarry(false);
+
+// picking placed pieces
+let selId=null;
+function pick(e){
+  setNdc(e); ray.setFromCamera(ndc,camera);
+  const hits=ray.intersectObjects(solid.filter(s=>s.count>0),false);
+  if(!hits.length){$('card').hidden=true;selId=null;return;}
+  const h=hits[0]; const id=h.object.userData.ids[h.instanceId]; showCard(id);
+}
+function showCard(id){
+  selId=id; const s=inst[id], g=geoms[s.g];
+  $('cName').textContent=g.name; $('cCat').textContent=`${g.cat} · ${s.step}. ${STEPS[s.step-1]}`;
+  $('cSize').textContent=`${g.size[0]} × ${g.size[1]} × ${g.size[2]} mm`;
+  $('cCount').textContent=`${g.n}개`; $('cFile').textContent=g.file;
+  $('card').hidden=false;
+}
+$('cClose').onclick=()=>{$('card').hidden=true;};
+$('cRemove').onclick=()=>{if(selId===null)return;placed[selId]=0;save();refreshGeom(inst[selId].g);renderProgress();buildTray();$('card').hidden=true;toast('뺐어요');};
+$('cTake').onclick=()=>{if(selId===null)return;const s=inst[selId];if(s.step!==curStep){curStep=s.step;buildRail();}takePart(s.g);};
+
+// confirm dialog
+function ask(text,fn){$('confirmText').textContent=text;$('confirm').hidden=false;$('cfYes').onclick=()=>{$('confirm').hidden=true;fn();};$('cfNo').onclick=()=>{$('confirm').hidden=true;};}
+$('bReset').onclick=()=>ask('끼운 부재를 모두 빼고 처음부터 시작할까요?',()=>{placed.fill(0);curStep=1;save();dropCarry(true);buildRail();buildTray();refreshAll();});
+$('bFillStep').onclick=()=>ask(`${STEPS[curStep-1]} 단계의 남은 부재를 한 번에 채울까요?`,()=>{for(const s of inst)if(s.step===curStep)placed[s.i]=1;save();dropCarry(true);refreshAll();renderProgress();buildTray();});
+
+// toggles
+function setMode(m){mode=m;$('mBuild').setAttribute('aria-pressed',m==='build');$('mSeq').setAttribute('aria-pressed',m==='seq');dropCarry(true);$('card').hidden=true;buildRail();buildTray();refreshAll();}
+$('mBuild').onclick=()=>setMode('build'); $('mSeq').onclick=()=>setMode('seq');
+$('tGhost').onclick=()=>{showGhost=!showGhost;$('tGhost').setAttribute('aria-pressed',showGhost);refreshAll();};
+$('tAllGhost').onclick=()=>{allGhost=!allGhost;$('tAllGhost').setAttribute('aria-pressed',allGhost);refreshAll();};
+$('bHome').onclick=home;
+$('explode').oninput=e=>{explode=+e.target.value;refreshAll();if(carry)updateCarry();};
+
+// theme-aware stage colours
+function applyTheme(){const dark=getComputedStyle(document.documentElement).colorScheme.includes('dark')||matchMedia('(prefers-color-scheme: dark)').matches&&document.documentElement.dataset.theme!=='light';
+  scene.background=new THREE.Color(cssVar('--stage')||'#d9ddd7'); groundMat.color.set(dark?0x2a302d:0xbfc4bc); ghostMat.color.set(dark?0xcfd6d2:0x3b4440); ghostMat.opacity=dark?0.12:0.18;}
+applyTheme(); matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+// resize & loop
+function resize(){const r=stage.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/Math.max(1,r.height);camera.updateProjectionMatrix();}
+new ResizeObserver(resize).observe(stage); resize();
+function loop(){controls.update();renderer.render(scene,camera);requestAnimationFrame(loop);}
+buildCats(); buildRail(); buildTray(); refreshAll(); $('loading').hidden=true; loop();
+})();
+</script>
