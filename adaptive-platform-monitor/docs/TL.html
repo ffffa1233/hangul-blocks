@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>라이프사이클 타임라인</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#8AB8FF}a:hover{color:#B7D3FF}
+.card{background:#161B22;border:1px solid #2A313C;border-radius:10px;padding:16px;box-sizing:border-box;min-width:0}
+.h2{margin:0 0 10px;font-size:15px;font-weight:700}
+.sub{font-weight:400;color:#9AA4B2;font-size:12px}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:#9AA4B2}
+.btn{min-height:40px;padding:0 14px;border-radius:6px;border:1px solid #2A313C;background:#0E1116;color:#E6EAF0;font:inherit;font-size:13px;cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:#9AA4B2;font-size:12px;font-weight:500;padding:6px 8px;border-bottom:1px solid #2A313C;white-space:nowrap}
+.tbl td{padding:6px 8px;border-bottom:1px solid #1E252F}
+.chip{display:inline-block;font-size:12px;font-weight:500;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.seek{flex:1;min-width:0;height:28px;padding:0;border:0;background:transparent;cursor:pointer}
+.seek:hover{background:rgba(76,154,255,0.12)}
+.tbtn{background:none;border:0;padding:0;color:#8AB8FF;font:inherit;font-family:'JetBrains Mono',monospace;font-size:12px;cursor:pointer;min-height:28px}
+</style>
+<script src="./runtime.js"></script>
+</head>
+<body>
+<script type="text/x-dc-template" id="dc-template">
+<div style="min-height: 100vh; background: #0E1116; color: #E6EAF0; font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px; background: #161B22; border-bottom: 1px solid #2A313C">
+<a href="Main.html" style="font-size: 13px; text-decoration: none">← 대시보드</a>
+<div style="flex: 1 1 280px">
+<div class="muted" style="font-size: 12px">EM · SM · COM 통합 / REC 연동</div>
+<h1 style="margin: 0; font-size: 18px">라이프사이클 타임라인</h1>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px"><span class="muted" style="font-size: 12px">시나리오</span>
+<div style="display: flex; gap: 4px; flex-wrap: wrap"><sc-for list="{{scenarios}}" as="s" hint-placeholder-count="2"><button type="button" class="btn" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="min-height: 36px; font-size: 12px; background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</button></sc-for></div></div>
+<div style="display: flex; gap: 6px; align-items: center">
+<button type="button" class="btn" onClick="{{play}}">{{playLabel}}</button>
+<button type="button" class="btn" onClick="{{speedToggle}}">{{speedLabel}}</button>
+<span class="mono" style="font-size: 15px; font-weight: 500; min-width: 72px; text-align: right">T+{{tText}}s</span>
+</div>
+</header>
+
+<div style="padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<div class="card" style="padding: 14px"><div class="muted" style="font-size: 12px">{{k.label}}</div><div class="mono" style="font-size: 24px; font-weight: 500; color: {{k.c}}">{{k.v}}</div><div class="muted" style="font-size: 12px">{{k.sub}}</div></div>
+</sc-for>
+</div>
+
+<section class="card" aria-labelledby="tl-t">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px">
+<h2 id="tl-t" class="h2" style="margin: 0">{{title}} <span class="sub">위쪽 눈금을 누르면 그 시점으로 이동합니다</span></h2>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: #9AA4B2">
+<sc-for list="{{legend}}" as="g" hint-placeholder-count="6"><span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 14px; height: 10px; border-radius: 2px; background: {{g.bg}}; border: 1px solid {{g.bd}}"></span>{{g.label}}</span></sc-for>
+<span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 9px; height: 9px; transform: rotate(45deg); background: #B48CFF"></span>SD 메시지</span>
+</div>
+</div>
+<div style="overflow-x: auto">
+<div style="position: relative; min-width: 940px">
+
+<div style="display: flex; align-items: flex-end; border-bottom: 1px solid #2A313C">
+<div style="width: 200px; flex: none; font-size: 11px; color: #8B95A3; padding-bottom: 6px">초 (부팅 기준)</div>
+<div style="flex: 1; position: relative">
+<div style="position: relative; height: 16px">
+<sc-for list="{{ticks}}" as="k" hint-placeholder-count="9"><span class="mono" style="position: absolute; left: {{k.x}}; transform: translateX(-50%); font-size: 10px; color: #8B95A3">{{k.l}}</span></sc-for>
+</div>
+<div style="display: flex">
+<sc-for list="{{seeks}}" as="s" hint-placeholder-count="80"><button type="button" class="seek" onClick="{{s.go}}" aria-label="{{s.aria}}" style="border-left: 1px solid {{s.line}}"></button></sc-for>
+</div>
+</div>
+</div>
+
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; height: 28px; margin-top: 6px">
+<div style="width: 200px; flex: none; font-size: 12px; font-weight: 700; color: {{g.c}}">{{g.title}}</div>
+<div style="flex: 1; height: 1px; background: #2A313C"></div>
+</div>
+<sc-for list="{{g.lanes}}" as="l" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; height: 30px">
+<div style="width: 200px; flex: none; display: flex; align-items: baseline; gap: 6px; padding-right: 8px; overflow: hidden">
+<span class="mono" style="font-size: 12px; white-space: nowrap">{{l.name}}</span><span class="muted" style="font-size: 10px; white-space: nowrap">{{l.sub}}</span>
+</div>
+<div style="flex: 1; position: relative; height: 22px">
+<div style="position: absolute; left: 0; right: 0; top: 10px; border-top: 1px dashed #2A313C"></div>
+<sc-for list="{{l.segs}}" as="s" hint-placeholder-count="3">
+<div title="{{s.tip}}" style="position: absolute; top: 1px; height: 20px; left: {{s.left}}; width: {{s.width}}; background: {{s.bg}}; border: 1px solid {{s.bd}}; border-radius: 4px; box-sizing: border-box; opacity: {{s.op}}; overflow: hidden; display: flex; align-items: center; padding-left: 5px"><span style="font-size: 10.5px; color: #E6EAF0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 3px">{{s.text}}</span></div>
+</sc-for>
+<sc-for list="{{l.marks}}" as="m" hint-placeholder-count="2">
+<span title="{{m.tip}}" style="position: absolute; top: 6px; left: {{m.left}}; width: 9px; height: 9px; margin-left: -5px; transform: rotate(45deg); background: {{m.c}}; border: 1px solid #0E1116; opacity: {{m.op}}"></span>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</sc-for>
+
+<div style="position: absolute; top: 0; bottom: 0; left: {{cursorLeft}}; width: 2px; margin-left: -1px; background: #E6EAF0; opacity: 0.85; pointer-events: none"></div>
+<div class="mono" style="position: absolute; top: 0; left: {{cursorLeft}}; transform: translateX(-50%); font-size: 10px; background: #E6EAF0; color: #0E1116; border-radius: 3px; padding: 0 4px; pointer-events: none">{{tText}}</div>
+</div>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" aria-labelledby="st-t" style="flex: 1 1 340px">
+<h2 id="st-t" class="h2">T+{{tText}}s 시점 상태</h2>
+<sc-for list="{{snapGroups}}" as="g" hint-placeholder-count="3">
+<div style="font-size: 12px; font-weight: 700; color: {{g.c}}; margin: 10px 0 2px">{{g.title}}</div>
+<sc-for list="{{g.rows}}" as="r" hint-placeholder-count="5">
+<div style="display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid #1E252F; font-size: 13px"><span class="mono" style="font-size: 12px">{{r.name}}</span><span class="chip" style="color: {{r.fg}}; background: {{r.bg}}">{{r.state}}</span></div>
+</sc-for>
+</sc-for>
+</section>
+
+<section class="card" aria-labelledby="ev-t" style="flex: 2 1 520px">
+<h2 id="ev-t" class="h2">이벤트 순서 <span class="sub">{{evCount}}건 · 시각을 누르면 이동</span></h2>
+<div id="evbox" style="position: relative; overflow-x: auto; max-height: 640px; overflow-y: auto">
+<table class="tbl" style="min-width: 520px">
+<thead><tr><th>시각</th><th>출처</th><th>내용</th></tr></thead>
+<tbody>
+<sc-for list="{{events}}" as="e" hint-placeholder-count="12">
+<tr data-cur="{{e.cur}}" style="background: {{e.rowBg}}; opacity: {{e.op}}">
+<td style="white-space: nowrap"><button type="button" class="tbtn" onClick="{{e.go}}">+{{e.t}}s</button></td>
+<td><span class="chip" style="color: {{e.fg}}; background: {{e.bg}}">{{e.src}}</span></td>
+<td style="font-size: 13px">{{e.text}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+
+<section class="card" aria-labelledby="rd-t">
+<h2 id="rd-t" class="h2">읽는 법</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 24px; font-size: 13px">
+<div><b>상태 (SM)</b> — Machine State와 Function Group이 언제 바뀌는지. 파란 구간은 전이 중으로, 이 구간이 길면 기동 순서나 타임아웃을 먼저 의심합니다.</div>
+<div><b>프로세스 (EM)</b> — Starting은 실행부터 ReportExecutionState(Running)까지. 모델 로드처럼 긴 Starting이 전체 기동 시간을 좌우합니다.</div>
+<div><b>서비스 (COM)</b> — 제공자가 Offer한 뒤 구독자가 Subscribe·Ack를 받아야 실제 데이터가 흐릅니다. 초록 구간 = 구독까지 완료.</div>
+</div>
+</section>
+
+</div>
+</div>
+</script>
+<script>
+window.__DC_PROPS = {"$preview":{"width":1440,"height":1500}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sc: 'normal', t: 40, playing: false, speed: 2 };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => {
+      if (!this.state.playing) return;
+      const t = Math.round((this.state.t + 0.1 * this.state.speed) * 10) / 10;
+      if (t >= 40) this.setState({ t: 40, playing: false }); else this.setState({ t });
+    }, 100);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  componentDidUpdate(prevProps, prevState) {
+    if (!prevState || (prevState.t === this.state.t && prevState.sc === this.state.sc)) return;
+    const box = document.getElementById('evbox');
+    const row = box && box.querySelector('[data-cur="1"]');
+    if (row) box.scrollTop = Math.max(0, row.offsetTop - box.clientHeight / 2);
+  }
+  renderVals() {
+    const { sc, t, playing, speed } = this.state;
+    const T = 40;
+    const crash = sc === 'crash';
+    const K = {
+      start: ['rgba(76,154,255,0.30)', '#4C9AFF'],
+      run: ['rgba(63,185,80,0.28)', '#3FB950'],
+      on: ['rgba(63,185,168,0.28)', '#3FB9A8'],
+      term: ['rgba(227,160,8,0.30)', '#E3A008'],
+      crit: ['rgba(248,81,73,0.40)', '#F85149'],
+      warn: ['rgba(227,160,8,0.18)', '#B07C06'],
+      off: ['rgba(154,164,178,0.10)', '#3A424E']
+    };
+    const CHIP = { start: ['#4C9AFF', 'rgba(76,154,255,0.14)'], run: ['#3FB950', 'rgba(63,185,80,0.14)'], on: ['#3FB9A8', 'rgba(63,185,168,0.14)'], term: ['#E3A008', 'rgba(227,160,8,0.14)'], crit: ['#F85149', 'rgba(248,81,73,0.14)'], warn: ['#E3A008', 'rgba(227,160,8,0.14)'], off: ['#9AA4B2', 'rgba(154,164,178,0.10)'], none: ['#8B95A3', 'transparent'] };
+
+    // ---- 레인 정의: [시작, 끝, 표시, 종류] ----
+    const ai = crash
+      ? [[12.4, 14.4, 'Starting', 'start'], [14.4, 22, 'Running', 'run'], [22, 23, 'Terminated', 'crit'], [23, 25, 'Starting (재시작 1/3)', 'start'], [25, 31.5, 'Running', 'run'], [31.5, 32, 'Terminating', 'term']]
+      : [[12.4, 14.4, 'Starting', 'start'], [14.4, 31.5, 'Running', 'run'], [31.5, 32, 'Terminating', 'term']];
+    const fgAi = crash
+      ? [[0, 12, 'Off', 'off'], [12, 14.5, '전이', 'start'], [14.5, 22.3, 'On', 'on'], [22.3, 25, 'Restarting', 'crit'], [25, 31.5, 'On', 'on'], [31.5, 32.5, '전이', 'start'], [32.5, 40, 'Off', 'off']]
+      : [[0, 12, 'Off', 'off'], [12, 14.5, '전이', 'start'], [14.5, 31.5, 'On', 'on'], [31.5, 32.5, '전이', 'start'], [32.5, 40, 'Off', 'off']];
+    const perc = crash
+      ? [[12.2, 13.8, 'Starting', 'start'], [13.8, 22, 'Running', 'run'], [22, 25.2, '입력 대기 (Degraded)', 'warn'], [25.2, 31.5, 'Running', 'run'], [31.5, 32.5, 'Terminating', 'term']]
+      : [[12.2, 13.8, 'Starting', 'start'], [13.8, 31.5, 'Running', 'run'], [31.5, 32.5, 'Terminating', 'term']];
+    const infer = crash
+      ? [[14.5, 14.6, 'Offered', 'start'], [14.6, 22, 'Subscribed · perception', 'run'], [25.1, 25.2, 'Offered', 'start'], [25.2, 31.6, 'Subscribed · perception', 'run']]
+      : [[14.5, 14.6, 'Offered', 'start'], [14.6, 31.6, 'Subscribed · perception', 'run']];
+
+    const G = [
+      { title: '상태 (SM)', c: '#3FB9A8', kind: 'state', lanes: [
+        { id: 'ms', name: 'Machine State', sub: '', segs: [[0, 3.2, 'Startup', 'start'], [3.2, 36, 'Running', 'on'], [36, 39, 'Shutdown', 'term']] },
+        { id: 'vm', name: 'VehicleMode', sub: '사용자 FG', segs: [[0, 12, 'Parking', 'off'], [12, 15, '전이', 'start'], [15, 30, 'Driving', 'on'], [30, 31.5, '전이', 'start'], [31.5, 36, 'Parking', 'off']] },
+        { id: 'fgp', name: 'Perception', sub: 'FG', segs: [[0, 12, 'Off', 'off'], [12, 14, '전이', 'start'], [14, 31.5, 'On', 'on'], [31.5, 33, '전이', 'start'], [33, 40, 'Off', 'off']] },
+        { id: 'fga', name: 'AI_Inference', sub: 'FG', segs: fgAi },
+        { id: 'fgl', name: 'Planning·Control', sub: 'FG', segs: [[0, 13.5, 'Off', 'off'], [13.5, 15.2, '전이', 'start'], [15.2, 30.5, 'On', 'on'], [30.5, 31.6, '전이', 'start'], [31.6, 40, 'Off', 'off']] }
+      ] },
+      { title: '프로세스 (EM)', c: '#4C9AFF', kind: 'proc', lanes: [
+        { id: 'em', name: 'em_daemon', sub: 'MachineFG', segs: [[1.0, 1.3, 'S', 'start'], [1.3, 38.5, 'Running', 'run'], [38.5, 39, 'T', 'term']] },
+        { id: 'sm', name: 'sm_daemon', sub: 'MachineFG', segs: [[1.3, 1.6, 'S', 'start'], [1.6, 38, 'Running', 'run'], [38, 38.5, 'T', 'term']] },
+        { id: 'com', name: 'com_gateway', sub: 'MachineFG', segs: [[1.6, 2.4, 'S', 'start'], [2.4, 37.5, 'Running', 'run'], [37.5, 38, 'T', 'term']] },
+        { id: 'perc', name: 'perception_app', sub: 'Perception', segs: perc },
+        { id: 'ai', name: 'ai_infer_svc', sub: 'AI_Inference', segs: ai },
+        { id: 'plan', name: 'planning_app', sub: 'Planning', segs: [[13.8, 14.8, 'Starting', 'start'], [14.8, 31, 'Running', 'run'], [31, 31.6, 'T', 'term']] },
+        { id: 'ctrl', name: 'control_app', sub: 'Control', segs: [[14.8, 15.2, 'S', 'start'], [15.2, 30.5, 'Running', 'run'], [30.5, 31, 'T', 'term']] }
+      ] },
+      { title: '서비스 (COM)', c: '#B48CFF', kind: 'svc', lanes: [
+        { id: 'obj', name: 'ObjectList', sub: 'perception → planning', segs: [[14.0, 15.0, 'Offered', 'start'], [15.0, 31.6, 'Subscribed · planning', 'run']] },
+        { id: 'inf', name: 'InferenceResult', sub: 'ai → perception', segs: infer },
+        { id: 'trj', name: 'Trajectory', sub: 'planning → control', segs: [[15.0, 15.3, 'Offered', 'start'], [15.3, 31.1, 'Subscribed · control', 'run']] },
+        { id: 'vs', name: 'VehicleState', sub: 'control → planning', segs: [[15.3, 15.4, 'Offered', 'start'], [15.4, 30.6, 'Subscribed · planning', 'run']] }
+      ] }
+    ];
+
+    // ---- 이벤트: [시각, 출처, 내용, 종류, 마커 레인] ----
+    const E = [
+      [0.0, 'SYS', '커널 부팅 시작', 'off'],
+      [1.0, 'EM', 'em_daemon 실행 (init이 EM 기동)', 'start'],
+      [1.3, 'EM', 'em_daemon Running → MachineFG 프로세스 기동 시작', 'run'],
+      [1.6, 'EM', 'sm_daemon Running', 'run'],
+      [2.4, 'EM', 'com_gateway Running · SOME/IP-SD 시작', 'run'],
+      [3.2, 'SM', 'Machine State: Startup → Running', 'on'],
+      [12.0, 'SM', '기어 D 신호 → VehicleMode Parking → Driving 요청', 'start'],
+      [12.2, 'EM', 'FG Perception Off → On: perception_app 실행', 'start'],
+      [12.4, 'EM', 'FG AI_Inference Off → On: ai_infer_svc 실행 (모델 로드 2.0s)', 'start'],
+      [13.8, 'EM', 'perception_app ReportExecutionState(Running)', 'run'],
+      [14.0, 'COM', 'OfferService ObjectList 0x1001:1', 'svc', 'obj'],
+      [14.4, 'EM', 'ai_infer_svc Running', 'run'],
+      [14.5, 'COM', 'OfferService InferenceResult 0x3001:1', 'svc', 'inf'],
+      [14.6, 'COM', 'perception_app → Subscribe InferenceResult · Ack', 'svc', 'inf'],
+      [14.8, 'EM', 'planning_app Running', 'run'],
+      [15.0, 'COM', 'planning_app → Subscribe ObjectList · Ack / OfferService Trajectory', 'svc', 'obj'],
+      [15.0, 'SM', 'VehicleMode = Driving (전이 3.0s)', 'on'],
+      [15.2, 'EM', 'control_app Running', 'run'],
+      [15.3, 'COM', 'control_app → Subscribe Trajectory · Ack / OfferService VehicleState', 'svc', 'trj'],
+      [15.4, 'COM', 'planning_app → Subscribe VehicleState · Ack — 서비스 4개 연결 완료', 'svc', 'vs'],
+      [30.0, 'SM', '기어 P 신호 → VehicleMode Driving → Parking 요청', 'start'],
+      [30.5, 'EM', 'control_app Terminating (의존 역순 종료 시작)', 'term'],
+      [30.6, 'COM', 'StopOfferService VehicleState', 'svc', 'vs'],
+      [31.0, 'EM', 'planning_app Terminating', 'term'],
+      [31.1, 'COM', 'StopOfferService Trajectory', 'svc', 'trj'],
+      [31.5, 'EM', 'perception_app · ai_infer_svc Terminating', 'term'],
+      [31.5, 'SM', 'VehicleMode = Parking', 'off'],
+      [31.6, 'COM', 'StopOfferService ObjectList', 'svc', 'obj'],
+      [31.6, 'COM', 'StopOfferService InferenceResult', 'svc', 'inf'],
+      [36.0, 'SM', '전원 OFF 요청 → Machine State: Running → Shutdown', 'term'],
+      [37.5, 'EM', 'com_gateway Terminating', 'term'],
+      [38.0, 'EM', 'sm_daemon Terminating', 'term'],
+      [38.5, 'EM', 'em_daemon Terminating', 'term'],
+      [39.0, 'SYS', '종료 완료 · 전원 차단', 'off']
+    ];
+    if (crash) E.push(
+      [22.0, 'EM', 'ai_infer_svc 비정상 종료 (SIGSEGV) · core dump 저장', 'crit'],
+      [22.0, 'COM', 'InferenceResult 제공 중단 (EM 통지) → perception_app FindService 반복', 'svc', 'inf'],
+      [22.1, 'PHM', 'ai_infer_svc Alive 감시 실패 보고', 'crit'],
+      [22.3, 'SM', 'FG AI_Inference: On → Restarting', 'crit'],
+      [23.0, 'EM', '재시작 정책 1/3 → ai_infer_svc 실행', 'start'],
+      [25.0, 'EM', 'ai_infer_svc Running', 'run'],
+      [25.1, 'COM', 'OfferService InferenceResult (재제공)', 'svc', 'inf'],
+      [25.2, 'COM', 'perception_app → Subscribe · Ack — 복구 완료 (장애 3.2s)', 'svc', 'inf']
+    );
+    E.sort((a, b) => a[0] - b[0]);
+    const SRC = { SYS: ['#9AA4B2', 'rgba(154,164,178,0.12)'], EM: ['#4C9AFF', 'rgba(76,154,255,0.14)'], SM: ['#3FB9A8', 'rgba(63,185,168,0.14)'], COM: ['#B48CFF', 'rgba(180,140,255,0.14)'], PHM: ['#F85149', 'rgba(248,81,73,0.14)'] };
+
+    const pct = (x) => (x / T * 100) + '%';
+    const fmt = (x) => x.toFixed(1);
+    const live = playing || t < T;
+    const groups = G.map(g => ({
+      title: g.title, c: g.c,
+      lanes: g.lanes.map(l => ({
+        name: l.name, sub: l.sub,
+        segs: l.segs.map(s => {
+          const w = s[1] - s[0];
+          const label = s[2].length === 1 ? '' : s[2];
+          return { left: pct(s[0]), width: pct(Math.max(0.15, w)), bg: K[s[3]][0], bd: K[s[3]][1], text: w >= 1.2 ? label : '', tip: l.name + ' · ' + (s[2] === 'S' ? 'Starting' : (s[2] === 'T' ? 'Terminating' : s[2])) + ' · ' + fmt(s[0]) + '–' + fmt(s[1]) + 's', op: live && s[0] > t ? 0.25 : 1 };
+        }),
+        marks: E.filter(e => e[4] === l.id).map(e => ({ left: pct(e[0]), c: e[2].indexOf('StopOffer') >= 0 || e[2].indexOf('중단') >= 0 ? '#F85149' : '#B48CFF', tip: '+' + fmt(e[0]) + 's ' + e[2], op: live && e[0] > t ? 0.25 : 1 }))
+      }))
+    }));
+
+    const stateAt = (g, l) => {
+      const s = l.segs.find(x => t >= x[0] && t < x[1]);
+      if (s) return { state: s[2] === 'S' ? 'Starting' : (s[2] === 'T' ? 'Terminating' : s[2]), k: s[3] };
+      if (g.kind === 'proc') return t < l.segs[0][0] ? { state: '미기동', k: 'none' } : { state: '종료됨', k: 'off' };
+      if (g.kind === 'svc') return { state: '미제공', k: 'none' };
+      return { state: t >= 39 ? '전원 꺼짐' : 'Off', k: 'off' };
+    };
+    const snapGroups = G.map(g => ({ title: g.title, c: g.c, rows: g.lanes.map(l => { const s = stateAt(g, l); return { name: l.name, state: s.state, fg: CHIP[s.k][0], bg: CHIP[s.k][1] }; }) }));
+
+    let lastIdx = -1;
+    E.forEach((e, i) => { if (e[0] <= t + 1e-9) lastIdx = i; });
+    const events = E.map((e, i) => ({
+      t: fmt(e[0]), src: e[1], text: e[2], fg: SRC[e[1]][0], bg: SRC[e[1]][1],
+      rowBg: i === lastIdx ? 'rgba(76,154,255,0.14)' : (e[3] === 'crit' ? 'rgba(248,81,73,0.06)' : 'transparent'),
+      op: live && e[0] > t ? 0.45 : 1, cur: i === lastIdx ? '1' : '0',
+      go: () => this.setState({ t: e[0], playing: false })
+    }));
+
+    const ticks = [0, 5, 10, 15, 20, 25, 30, 35, 40].map(v => ({ x: pct(v), l: v + 's' }));
+    const seeks = Array.from({ length: 80 }, (_, i) => ({ go: () => this.setState({ t: i / 2, playing: false }), aria: (i / 2) + '초로 이동', line: i % 10 === 0 ? '#2A313C' : 'transparent' }));
+    const kpis = [
+      { label: '부팅 → Machine Running', v: '3.2s', sub: '예산 5.0s 이내', c: '#3FB950' },
+      { label: '주행 모드 전환 (FG 4개)', v: '3.0s', sub: '+12.0s 요청 → +15.0s Driving', c: '#E6EAF0' },
+      { label: '서비스 연결 완료', v: '3.4s', sub: '요청 후 4개 서비스 Subscribe·Ack까지', c: '#E6EAF0' },
+      crash ? { label: '앱 크래시 복구', v: '3.2s', sub: '+22.0s 종료 → +25.2s 재구독', c: '#F85149' } : { label: '정상 종료 소요', v: '9.0s', sub: '+30.0s 주차 → +39.0s 전원 차단', c: '#E6EAF0' }
+    ];
+    const SCN = [['normal', '정상: 기동 → 주행 → 종료'], ['crash', '주행 중 ai_infer_svc 크래시']];
+    const scenarios = SCN.map(([k, l]) => ({ label: l, pressed: k === sc ? 'true' : 'false', pick: () => this.setState({ sc: k, t: 0, playing: true }), bg: k === sc ? '#4C9AFF' : '#0E1116', fg: k === sc ? '#0E1116' : '#E6EAF0' }));
+    const legend = [['Starting / 전이', 'start'], ['Running', 'run'], ['State On', 'on'], ['Terminating', 'term'], ['Degraded', 'warn'], ['비정상 종료', 'crit']].map(([l, k]) => ({ label: l, bg: K[k][0], bd: K[k][1] }));
+
+    return {
+      scenarios, kpis, legend, groups, ticks, seeks, snapGroups, events, evCount: String(E.length),
+      title: crash ? '운행 중 앱 크래시와 자동 복구' : '정상 운행: 기동 → 주행 → 주차 → 종료',
+      tText: fmt(t), cursorLeft: 'calc(200px + (100% - 200px) * ' + (t / T) + ')',
+      playLabel: playing ? '일시정지' : (t >= T ? '처음부터 재생' : '재생'),
+      play: () => this.setState({ playing: !this.state.playing, t: !this.state.playing && this.state.t >= T ? 0 : this.state.t }),
+      speedLabel: '속도 ' + speed + 'x',
+      speedToggle: () => this.setState({ speed: this.state.speed === 2 ? 5 : (this.state.speed === 5 ? 1 : 2) })
+    };
+  }
+}
+window.__DC_Component = Component;
+</script>
+</body>
+</html>

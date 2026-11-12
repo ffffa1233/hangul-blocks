@@ -22,6 +22,7 @@
       this.__render = null;
     }
     setState(patch) {
+      if (!this.__prev) this.__prev = this.state;
       const next = typeof patch === 'function' ? patch(this.state, this.props) : patch;
       this.state = Object.assign({}, this.state, next);
       if (this.__render) this.__render();
@@ -188,9 +189,13 @@
       const next = build(tree.children, Object.assign(Object.create(null), vals), []);
       patch(host, old, next);
       old = next;
+      const prev = comp.__prev;
+      comp.__prev = null;
+      if (prev && comp.componentDidUpdate) comp.componentDidUpdate(comp.props, prev);
     };
     comp.__render = () => { if (!queued) { queued = true; requestAnimationFrame(render); } };
     render();
+    comp.__prev = null;
     if (comp.componentDidMount) comp.componentDidMount();
     window.addEventListener('pagehide', () => { if (comp.componentWillUnmount) comp.componentWillUnmount(); });
   }

@@ -13,11 +13,12 @@
   `https://ffffa1233.github.io/hangul-blocks/adaptive-platform-monitor/docs/`
 - 로컬: `adaptive-platform-monitor/docs/index.html` 을 브라우저로 열면 됩니다. 서버나 설치가 필요 없습니다.
 
-## 화면 구성 (20개)
+## 화면 구성 (21개)
 
 | 영역 | 파일 | 시뮬레이션 시나리오 |
 | --- | --- | --- |
 | 대시보드 | `Main.html` | 실시간 개요, 메뉴 배지 |
+| **라이프사이클 타임라인** | `TL.html` | 기동 → 주행 → 종료 / 주행 중 앱 크래시와 자동 복구 (재생·시점 이동) |
 | EM 실행 관리 | `EM.html` | 앱 크래시 → 자동 재시작 / 재시작 한도 초과 → FG 정지 |
 | SM 상태 관리 | `SM.html` | 주행 모드 진입 / 기동 타임아웃 → 롤백 |
 | COM 통신 | `COM.html` | Provider 중단 → 재연결 / 네트워크 혼잡 |
@@ -39,6 +40,12 @@
 | Security · 감사 로그 | `SEC-AUDIT.html` | DB 변조 시험 → 해시 체인 검증으로 위반 지점 탐지 |
 
 각 기능 페이지 왼쪽에는 **기능 명세**(기능 ID · 설명 · MVP/2단계/3단계)가 있고, 화면 카드의 태그(예: `EM-05`)와 1:1로 대응합니다.
+
+## 라이프사이클 타임라인
+
+프로세스 기동·종료(EM), Machine State·Function Group 전이(SM), 서비스 Offer·Subscribe(COM)를 한 시간축에 겹쳐 보여줍니다. 재생하거나 눈금을 눌러 그 순간 모든 레인의 상태와 이벤트 순서를 확인할 수 있습니다.
+
+![라이프사이클 타임라인](spec-images/timeline.png)
 
 ## 개발 명세
 
